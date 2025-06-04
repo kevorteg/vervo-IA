@@ -1,0 +1,87 @@
+[
+  {
+    "categoria": "Información General",
+    "preguntas": [
+      {
+        "pregunta": "¿Qué es Misión Juvenil?",
+        "respuesta": "Misión Juvenil es una organización cristiana dedicada a formar y acompañar a jóvenes en su crecimiento espiritual, personal y comunitario. Trabajamos para que cada joven descubra su propósito y desarrolle su potencial a través de actividades formativas, espirituales y de servicio."
+      },
+      {
+        "pregunta": "¿Cuándo se fundó Misión Juvenil?",
+        "respuesta": "Misión Juvenil fue fundada en 1995 por un grupo de líderes cristianos comprometidos con la formación integral de la juventud. Desde entonces, hemos crecido hasta convertirnos en una referencia en el trabajo con jóvenes."
+      },
+      {
+        "pregunta": "¿Dónde están ubicados?",
+        "respuesta": "Nuestra sede central está ubicada en [dirección completa]. Además, contamos con sedes regionales en varias ciudades del país. Puedes consultar todas nuestras ubicaciones en la sección 'Contacto' de nuestra página web."
+      }
+    ]
+  },
+  {
+    "categoria": "Participación",
+    "preguntas": [
+      {
+        "pregunta": "¿Cómo puedo unirme a Misión Juvenil?",
+        "respuesta": "Puedes unirte asistiendo a cualquiera de nuestras actividades abiertas como los grupos de estudio bíblico, talleres o eventos. Para ser miembro activo, debes completar el proceso de inducción que incluye participar en el retiro de bienvenida y comprometerte con los valores de la organización."
+      },
+      {
+        "pregunta": "¿Hay límite de edad para participar?",
+        "respuesta": "Nuestras actividades están principalmente dirigidas a jóvenes entre 15 y 30 años. Sin embargo, algunas actividades específicas pueden tener rangos de edad más acotados. Los eventos familiares y comunitarios están abiertos a todas las edades."
+      },
+      {
+        "pregunta": "¿Necesito ser cristiano para participar?",
+        "respuesta": "Nuestras actividades están abiertas a todos los jóvenes, independientemente de su trasfondo religioso. Valoramos la diversidad y respetamos el proceso personal de cada uno. Sin embargo, es importante saber que nuestro enfoque y valores están basados en principios cristianos."
+      }
+    ]
+  },
+  {
+    "categoria": "Liderazgo",
+    "preguntas": [
+      {
+        "pregunta": "¿Cómo puedo ser líder en Misión Juvenil?",
+        "respuesta": "El camino hacia el liderazgo comienza con la participación activa en nuestras actividades, demostrando compromiso con los valores de la organización. Luego, puedes aplicar al programa de formación de líderes, que incluye capacitación, mentoría y experiencias prácticas de servicio."
+      },
+      {
+        "pregunta": "¿Qué responsabilidades tienen los líderes?",
+        "respuesta": "Los líderes en Misión Juvenil tienen diversas responsabilidades según su área de servicio, que pueden incluir: facilitar grupos pequeños, organizar eventos, mentorear a otros jóvenes, desarrollar contenido formativo, y representar a la organización en diferentes espacios. Todos los líderes deben mantener un testimonio coherente con los valores cristianos."
+      },
+      {
+        "pregunta": "¿Ofrecen capacitación para líderes?",
+        "respuesta": "Sí, contamos con un programa estructurado de formación de líderes que incluye talleres mensuales, retiros de capacitación, recursos en línea y acompañamiento personalizado. Además, organizamos una conferencia anual de liderazgo con ponentes nacionales e internacionales."
+      }
+    ]
+  },
+  {
+    "categoria": "Eventos y Actividades",
+    "preguntas": [
+      {
+        "pregunta": "¿Qué tipos de actividades organizan?",
+        "respuesta": "Organizamos una amplia variedad de actividades, incluyendo: estudios bíblicos semanales, retiros espirituales, talleres de formación, eventos deportivos, conciertos, campamentos, proyectos de servicio comunitario, misiones de corto plazo, y conferencias temáticas."
+      },
+      {
+        "pregunta": "¿Cómo puedo enterarme de los próximos eventos?",
+        "respuesta": "Puedes mantenerte informado sobre nuestros eventos a través de nuestras redes sociales, suscribiéndote a nuestro boletín mensual por correo electrónico, o consultando el calendario de actividades en nuestra página web. También puedes preguntar directamente a cualquier líder de Misión Juvenil."
+      },
+      {
+        "pregunta": "¿Tienen actividades virtuales?",
+        "respuesta": "Sí, ofrecemos varias actividades en formato virtual, incluyendo estudios bíblicos en línea, webinars formativos, y encuentros de oración. Estas opciones son especialmente útiles para quienes no pueden asistir presencialmente o viven en zonas donde no tenemos presencia física."
+      }
+    ]
+  },
+  {
+    "categoria": "Donaciones y Apoyo",
+    "preguntas": [
+      {
+        "pregunta": "¿Cómo puedo apoyar económicamente a Misión Juvenil?",
+        "respuesta": "Puedes hacer donaciones a través de nuestra página web, mediante transferencia bancaria, o participando en nuestro programa de socios mensuales. Todas las donaciones son deducibles de impuestos y se utilizan para financiar nuestros programas y proyectos."
+      },
+      {
+        "pregunta": "¿Puedo donar algo que no sea dinero?",
+        "respuesta": "Sí, aceptamos donaciones en especie como equipos tecnológicos, materiales educativos, alimentos no perecederos para proyectos sociales, y servicios profesionales. Contacta con nuestro equipo de recursos para coordinar este tipo de donaciones."
+      },
+      {
+        "pregunta": "¿Cómo se utilizan las donaciones?",
+        "respuesta": "Las donaciones se utilizan para financiar nuestros programas formativos, becas para jóvenes de escasos recursos, proyectos de impacto comunitario, mantenimiento de instalaciones, y desarrollo de nuevos recursos y materiales. Publicamos informes anuales de transparencia en nuestra web."
+      }
+    ]
+  }
+]

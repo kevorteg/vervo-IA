@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+  <!-- Fondo del avatar -->
+  <circle cx="100" cy="100" r="90" fill="#e1e5ea" />
+  
+  <!-- Cara -->
+  <ellipse cx="100" cy="100" rx="70" ry="80" fill="#ffdbac" />
+  
+  <!-- Pelo -->
+  <path d="M100,30 C60,30 40,70 40,110 C40,150 60,170 100,170 C140,170 160,150 160,110 C160,70 140,30 100,30 Z" fill="#4a86e8" />
+  
+  <!-- Cara sobre el pelo -->
+  <ellipse cx="100" cy="105" rx="55" ry="65" fill="#ffdbac" />
+  
+  <!-- Ojos -->
+  <ellipse cx="80" cy="95" rx="5" ry="7" fill="#2c3e50" />
+  <ellipse cx="120" cy="95" rx="5" ry="7" fill="#2c3e50" />
+  
+  <!-- Cejas -->
+  <path d="M70,85 Q80,80 90,85" stroke="#2c3e50" stroke-width="2" fill="transparent" />
+  <path d="M110,85 Q120,80 130,85" stroke="#2c3e50" stroke-width="2" fill="transparent" />
+  
+  <!-- Nariz -->
+  <path d="M100,100 L100,115 Q105,120 100,120" stroke="#2c3e50" stroke-width="1.5" fill="transparent" />
+  
+  <!-- Boca -->
+  <path d="M85,130 Q100,140 115,130" stroke="#2c3e50" stroke-width="2" fill="transparent" />
+  
+  <!-- Mejillas -->
+  <circle cx="75" cy="115" r="5" fill="#e8a3a3" opacity="0.5" />
+  <circle cx="125" cy="115" r="5" fill="#e8a3a3" opacity="0.5" />
+</svg>

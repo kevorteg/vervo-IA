@@ -1,0 +1,99 @@
+/* Estilos para el sistema de retroalimentación y preguntas sugeridas */
+
+/* Contenedor de retroalimentación */
+.message-feedback {
+  margin-top: 10px;
+  padding: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.9em;
+}
+
+.message-feedback p {
+  margin: 0 0 5px 0;
+  color: #a0a0a0;
+  font-size: 0.85em;
+}
+
+/* Botones de retroalimentación */
+.feedback-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.feedback-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #a0a0a0;
+}
+
+.feedback-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.feedback-btn.yes:hover {
+  color: #4CAF50;
+  border-color: #4CAF50;
+}
+
+.feedback-btn.no:hover {
+  color: #F44336;
+  border-color: #F44336;
+}
+
+/* Preguntas sugeridas */
+.suggested-questions {
+  margin-top: 15px;
+}
+
+.suggested-questions p {
+  margin: 0 0 5px 0;
+  color: #a0a0a0;
+  font-size: 0.85em;
+}
+
+.questions-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 5px;
+}
+
+.question-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  padding: 6px 12px;
+  font-size: 0.85em;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.question-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Estilos responsivos */
+@media (max-width: 768px) {
+  .questions-list {
+    flex-direction: column;
+  }
+  
+  .question-btn {
+    width: 100%;
+  }
+}

@@ -1,0 +1,67 @@
+[
+  {
+    "id": 1,
+    "nombre": "Retiro Espiritual Juvenil",
+    "fecha": "2024-07-15",
+    "hora": "16:00",
+    "lugar": "Centro de Retiros El Buen Pastor",
+    "descripcion": "Un fin de semana de renovación espiritual para jóvenes entre 15 y 25 años. Incluye talleres, adoración, momentos de reflexión y actividades recreativas.",
+    "publico_objetivo": "Jóvenes 15-25 años",
+    "requisitos": "Llevar Biblia, ropa cómoda, artículos de aseo personal",
+    "contacto": "coordinador@misionjuvenil.org",
+    "costo": "$50.000",
+    "imagen": "retiro_espiritual.jpg"
+  },
+  {
+    "id": 2,
+    "nombre": "Taller de Liderazgo Cristiano",
+    "fecha": "2024-08-05",
+    "hora": "18:30",
+    "lugar": "Sede Central Misión Juvenil",
+    "descripcion": "Serie de 4 sesiones para desarrollar habilidades de liderazgo basadas en principios bíblicos. Incluye material de estudio y certificado de participación.",
+    "publico_objetivo": "Líderes juveniles actuales y potenciales",
+    "requisitos": "Compromiso de asistencia a todas las sesiones",
+    "contacto": "formacion@misionjuvenil.org",
+    "costo": "Gratuito",
+    "imagen": "taller_liderazgo.jpg"
+  },
+  {
+    "id": 3,
+    "nombre": "Concierto de Adoración",
+    "fecha": "2024-09-20",
+    "hora": "19:00",
+    "lugar": "Auditorio Municipal",
+    "descripcion": "Noche de adoración y alabanza con bandas juveniles locales y artistas invitados. Oportunidad para compartir la fe a través de la música.",
+    "publico_objetivo": "Todo público",
+    "requisitos": "Entrada con boleto (disponible en línea)",
+    "contacto": "eventos@misionjuvenil.org",
+    "costo": "$15.000",
+    "imagen": "concierto_adoracion.jpg"
+  },
+  {
+    "id": 4,
+    "nombre": "Misión Urbana",
+    "fecha": "2024-10-12",
+    "hora": "09:00",
+    "lugar": "Punto de encuentro: Plaza Central",
+    "descripcion": "Jornada de servicio comunitario en zonas vulnerables de la ciudad. Incluye distribución de alimentos, actividades recreativas para niños y apoyo a adultos mayores.",
+    "publico_objetivo": "Jóvenes voluntarios (16+ años)",
+    "requisitos": "Inscripción previa, asistir a capacitación obligatoria",
+    "contacto": "accion@misionjuvenil.org",
+    "costo": "Gratuito",
+    "imagen": "mision_urbana.jpg"
+  },
+  {
+    "id": 5,
+    "nombre": "Grupo de Estudio Bíblico",
+    "fecha": "Todos los miércoles",
+    "hora": "19:30",
+    "lugar": "Sede Central Misión Juvenil",
+    "descripcion": "Encuentro semanal para profundizar en el estudio de las Escrituras con enfoque en aplicaciones prácticas para la vida juvenil contemporánea.",
+    "publico_objetivo": "Jóvenes 16-30 años",
+    "requisitos": "Traer Biblia",
+    "contacto": "formacion@misionjuvenil.org",
+    "costo": "Gratuito",
+    "imagen": "estudio_biblico.jpg"
+  }
+]

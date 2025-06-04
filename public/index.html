@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lucero</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="feedback-styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <!-- Integración de WebLLM para modelos de IA en el navegador -->
+  <script src="web-llm-integration.js"></script>
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <div class="container" id="main-container">
+    <header>
+
+        <h1> <img src="logo_blanco.png" alt="Lucero Avatar" class="logo_blanco_css"></h1>
+      <div class="header-buttons">
+        <button id="login-btn">Log in</button>
+        <button id="signup-btn">Sign up</button>
+      </div>
+    </header>
+    
+    <div class="chat-container" id="current-chat">
+      <div id="chat-messages" class="chat-messages">
+        <div class="message bot">
+          <div class="message-content">
+            <p>¡Paz y luz, amado joven! ¿En qué puedo ayudarte hoy?</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="chat-input">
+        <input type="text" id="user-input" placeholder="Pregunta lo que quieres..." autocomplete="off">
+        <button id="send-btn"><i class="fas fa-paper-plane"></i></button>
+      </div>
+    </div>
+  </div>
+  
+  <div class="conversations-sidebar" id="conversations-sidebar">
+    <div class="sidebar-header">
+      <h2>Conversaciones</h2>
+      <button id="new-chat-btn"><i class="fas fa-plus"></i> Nueva</button>
+    </div>
+    <div class="conversations-list" id="conversations-list">
+      <div class="conversation active" data-id="default">
+        <span>Conversación actual</span>
+        <button class="delete-conversation-btn"><i class="fas fa-trash"></i></button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
