@@ -9,7 +9,246 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      alertas: {
+        Row: {
+          contenido_mensaje: string
+          conversacion_id: string | null
+          created_at: string
+          id: string
+          mensaje_id: string | null
+          moderador_id: string | null
+          notas_moderador: string | null
+          revisada: boolean | null
+          tipo: string
+        }
+        Insert: {
+          contenido_mensaje: string
+          conversacion_id?: string | null
+          created_at?: string
+          id?: string
+          mensaje_id?: string | null
+          moderador_id?: string | null
+          notas_moderador?: string | null
+          revisada?: boolean | null
+          tipo: string
+        }
+        Update: {
+          contenido_mensaje?: string
+          conversacion_id?: string | null
+          created_at?: string
+          id?: string
+          mensaje_id?: string | null
+          moderador_id?: string | null
+          notas_moderador?: string | null
+          revisada?: boolean | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alertas_conversacion_id_fkey"
+            columns: ["conversacion_id"]
+            isOneToOne: false
+            referencedRelation: "conversaciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alertas_mensaje_id_fkey"
+            columns: ["mensaje_id"]
+            isOneToOne: false
+            referencedRelation: "mensajes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alertas_moderador_id_fkey"
+            columns: ["moderador_id"]
+            isOneToOne: false
+            referencedRelation: "moderadores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      configuracion: {
+        Row: {
+          clave: string
+          descripcion: string | null
+          id: string
+          updated_at: string
+          valor: Json
+        }
+        Insert: {
+          clave: string
+          descripcion?: string | null
+          id?: string
+          updated_at?: string
+          valor: Json
+        }
+        Update: {
+          clave?: string
+          descripcion?: string | null
+          id?: string
+          updated_at?: string
+          valor?: Json
+        }
+        Relationships: []
+      }
+      contenido_doctrinal: {
+        Row: {
+          activo: boolean
+          categoria: string
+          contenido: string
+          created_at: string
+          id: string
+          tags: string[] | null
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          categoria: string
+          contenido: string
+          created_at?: string
+          id?: string
+          tags?: string[] | null
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          categoria?: string
+          contenido?: string
+          created_at?: string
+          id?: string
+          tags?: string[] | null
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      conversaciones: {
+        Row: {
+          activa: boolean
+          created_at: string
+          id: string
+          titulo: string | null
+          updated_at: string
+          usuario_id: string
+        }
+        Insert: {
+          activa?: boolean
+          created_at?: string
+          id?: string
+          titulo?: string | null
+          updated_at?: string
+          usuario_id: string
+        }
+        Update: {
+          activa?: boolean
+          created_at?: string
+          id?: string
+          titulo?: string | null
+          updated_at?: string
+          usuario_id?: string
+        }
+        Relationships: []
+      }
+      estadisticas: {
+        Row: {
+          alertas_activadas: number | null
+          conversaciones_total: number | null
+          created_at: string
+          fecha: string
+          id: string
+          mensajes_total: number | null
+          temas_consultados: Json | null
+        }
+        Insert: {
+          alertas_activadas?: number | null
+          conversaciones_total?: number | null
+          created_at?: string
+          fecha?: string
+          id?: string
+          mensajes_total?: number | null
+          temas_consultados?: Json | null
+        }
+        Update: {
+          alertas_activadas?: number | null
+          conversaciones_total?: number | null
+          created_at?: string
+          fecha?: string
+          id?: string
+          mensajes_total?: number | null
+          temas_consultados?: Json | null
+        }
+        Relationships: []
+      }
+      mensajes: {
+        Row: {
+          contenido: string
+          contiene_alerta: boolean | null
+          conversacion_id: string | null
+          created_at: string
+          es_usuario: boolean
+          id: string
+          tipo_alerta: string | null
+        }
+        Insert: {
+          contenido: string
+          contiene_alerta?: boolean | null
+          conversacion_id?: string | null
+          created_at?: string
+          es_usuario: boolean
+          id?: string
+          tipo_alerta?: string | null
+        }
+        Update: {
+          contenido?: string
+          contiene_alerta?: boolean | null
+          conversacion_id?: string | null
+          created_at?: string
+          es_usuario?: boolean
+          id?: string
+          tipo_alerta?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mensajes_conversacion_id_fkey"
+            columns: ["conversacion_id"]
+            isOneToOne: false
+            referencedRelation: "conversaciones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      moderadores: {
+        Row: {
+          activo: boolean
+          created_at: string
+          email: string
+          id: string
+          nombre: string
+          rol: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          email: string
+          id?: string
+          nombre: string
+          rol?: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          email?: string
+          id?: string
+          nombre?: string
+          rol?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

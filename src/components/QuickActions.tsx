@@ -1,61 +1,65 @@
 
-import { Heart, HelpCircle, Sparkles, Info } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Heart, BookOpen, Hands, Cross } from 'lucide-react';
 
 interface QuickActionsProps {
-  onQuickAction: (action: string) => void;
+  onActionClick: (action: string) => void;
 }
 
-export const QuickActions = ({ onQuickAction }: QuickActionsProps) => {
-  const quickActions = [
+export const QuickActions = ({ onActionClick }: QuickActionsProps) => {
+  const actions = [
     {
       id: 'prayer',
-      label: 'Quiero oración',
+      label: 'Oración',
+      icon: Hands,
+      color: 'bg-purple-50 text-purple-600 hover:bg-purple-100',
+      description: 'Oremos juntos'
+    },
+    {
+      id: 'devotional',
+      label: 'Devocional',
+      icon: BookOpen,
+      color: 'bg-blue-50 text-blue-600 hover:bg-blue-100',
+      description: 'Palabra de hoy'
+    },
+    {
+      id: 'crisis',
+      label: 'Ayuda',
       icon: Heart,
-      message: 'Hola ChatMJ, necesito oración por algo que me preocupa'
+      color: 'bg-red-50 text-red-600 hover:bg-red-100',
+      description: 'Necesito apoyo'
     },
     {
-      id: 'sad',
-      label: 'Estoy triste',
-      icon: HelpCircle,
-      message: 'Me siento triste y necesito palabras de aliento'
-    },
-    {
-      id: 'doubts',
-      label: 'Tengo dudas sobre Dios',
-      icon: Sparkles,
-      message: 'Tengo algunas dudas sobre la fe y necesito ayuda'
-    },
-    {
-      id: 'about-mj',
-      label: '¿Qué es MJ?',
-      icon: Info,
-      message: '¿Puedes contarme sobre Misión Juvenil?'
+      id: 'evangelism',
+      label: 'Salvación',
+      icon: Cross,
+      color: 'bg-orange-50 text-orange-600 hover:bg-orange-100',
+      description: 'Conocer a Jesús'
     }
   ];
 
   return (
-    <div className="p-4 bg-white/70 backdrop-blur-sm border-t border-aurora-violet/20">
-      <p className="text-sm text-aurora-violet font-medium mb-3 text-center">
-        ¿En qué puedo ayudarte hoy?
-      </p>
-      <div className="grid grid-cols-2 gap-2">
-        {quickActions.map((action) => (
-          <Button
-            key={action.id}
-            onClick={() => onQuickAction(action.message)}
-            variant="outline"
-            className="h-auto p-3 text-left hover:bg-aurora-violet/10 hover:border-aurora-violet/30 transition-all duration-200 group"
-          >
-            <div className="flex items-center space-x-2">
-              <action.icon className="w-4 h-4 text-aurora-violet group-hover:text-aurora-celestial transition-colors" />
-              <span className="text-xs font-medium text-gray-700 group-hover:text-aurora-violet">
-                {action.label}
-              </span>
-            </div>
-          </Button>
-        ))}
+    <div className="px-4 py-3 border-t border-gray-100 bg-gray-50/50">
+      <div className="flex flex-wrap gap-2 justify-center">
+        {actions.map((action) => {
+          const IconComponent = action.icon;
+          return (
+            <button
+              key={action.id}
+              onClick={() => onActionClick(action.id)}
+              className={`
+                flex items-center space-x-2 px-3 py-2 rounded-full text-sm font-medium
+                transition-all duration-200 hover:scale-105 ${action.color}
+              `}
+            >
+              <IconComponent className="w-4 h-4" />
+              <span className="hidden sm:inline">{action.label}</span>
+              <span className="sm:hidden">{action.description}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
 };
+
+export default QuickActions;

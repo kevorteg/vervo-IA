@@ -1,138 +1,262 @@
 
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Aurora Celestial Design System */
+:root {
+  /* Colores oficiales de Misión Juvenil */
+  --color-primario: #F58634;
+  --color-usuario: #449BD1;
+  --color-ia: #473458;
+  --color-fondo: #FFFFFF;
+  --color-texto: #374151;
+  --color-texto-claro: #6B7280;
+  --color-borde: #E5E7EB;
+  --color-hover: #F3F4F6;
+}
 
-@layer base {
-  :root {
-    --background: 255 255 255;
-    --foreground: 45 45 45;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-    --card: 255 255 255;
-    --card-foreground: 45 45 45;
+body {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  background-color: var(--color-fondo);
+  color: var(--color-texto);
+  line-height: 1.6;
+}
 
-    --popover: 255 255 255;
-    --popover-foreground: 45 45 45;
+/* Aurora gradient background */
+.bg-aurora-gradient {
+  background: linear-gradient(135deg, 
+    rgba(245, 134, 52, 0.1) 0%, 
+    rgba(68, 155, 209, 0.1) 35%, 
+    rgba(71, 52, 88, 0.1) 100%);
+  min-height: 100vh;
+}
 
-    --primary: 139 90 150;
-    --primary-foreground: 255 255 255;
+/* Gradientes para elementos especiales */
+.message-gradient {
+  background: linear-gradient(135deg, var(--color-ia), #5A4270);
+}
 
-    --secondary: 135 206 235;
-    --secondary-foreground: 45 45 45;
+.aurora-shadow {
+  box-shadow: 0 4px 20px rgba(71, 52, 88, 0.1), 0 1px 3px rgba(71, 52, 88, 0.08);
+}
 
-    --muted: 245 245 245;
-    --muted-foreground: 115 115 115;
+.user-message-gradient {
+  background: linear-gradient(135deg, var(--color-usuario), #5BB4D9);
+}
 
-    --accent: 232 213 237;
-    --accent-foreground: 45 45 45;
+/* Animaciones suaves */
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
 
-    --destructive: 220 38 38;
-    --destructive-foreground: 255 255 255;
+.animate-slide-up {
+  animation: slideUp 0.4s ease-out;
+}
 
-    --border: 229 229 229;
-    --input: 229 229 229;
-    --ring: 139 90 150;
+.animate-pulse-gentle {
+  animation: pulseGentle 2s infinite;
+}
 
-    --radius: 0.75rem;
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
-    --sidebar-background: 255 255 255;
-    --sidebar-foreground: 45 45 45;
-    --sidebar-primary: 139 90 150;
-    --sidebar-primary-foreground: 255 255 255;
-    --sidebar-accent: 232 213 237;
-    --sidebar-accent-foreground: 45 45 45;
-    --sidebar-border: 229 229 229;
-    --sidebar-ring: 139 90 150;
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulseGentle {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
+
+/* Typing indicator */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  space-x: 1px;
+}
+
+.typing-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--color-ia);
+  margin: 0 2px;
+  animation: typing 1.4s infinite ease-in-out;
+}
+
+.typing-dot:nth-child(1) { animation-delay: -0.32s; }
+.typing-dot:nth-child(2) { animation-delay: -0.16s; }
+.typing-dot:nth-child(3) { animation-delay: 0; }
+
+@keyframes typing {
+  0%, 80%, 100% { 
+    transform: scale(0.8);
+    opacity: 0.5;
   }
-
-  .dark {
-    --background: 45 45 45;
-    --foreground: 255 255 255;
-    --card: 55 55 55;
-    --card-foreground: 255 255 255;
-    --popover: 55 55 55;
-    --popover-foreground: 255 255 255;
-    --primary: 184 153 196;
-    --primary-foreground: 45 45 45;
-    --secondary: 184 224 240;
-    --secondary-foreground: 45 45 45;
-    --muted: 65 65 65;
-    --muted-foreground: 165 165 165;
-    --accent: 75 75 75;
-    --accent-foreground: 255 255 255;
-    --destructive: 239 68 68;
-    --destructive-foreground: 255 255 255;
-    --border: 75 75 75;
-    --input: 75 75 75;
-    --ring: 184 153 196;
-    --sidebar-background: 45 45 45;
-    --sidebar-foreground: 255 255 255;
-    --sidebar-primary: 184 153 196;
-    --sidebar-primary-foreground: 45 45 45;
-    --sidebar-accent: 75 75 75;
-    --sidebar-accent-foreground: 255 255 255;
-    --sidebar-border: 75 75 75;
-    --sidebar-ring: 184 153 196;
+  40% { 
+    transform: scale(1);
+    opacity: 1;
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-
-  body {
-    @apply bg-aurora-gradient font-inter text-foreground min-h-screen;
-  }
-
-  .aurora-text {
-    @apply bg-gradient-to-r from-aurora-violet to-aurora-celestial bg-clip-text text-transparent;
-  }
-
-  .aurora-shadow {
-    box-shadow: 0 4px 20px rgba(139, 90, 150, 0.15);
-  }
-
-  .message-bubble {
-    @apply rounded-2xl px-4 py-3 max-w-xs md:max-w-md break-words;
-    animation: slide-up 0.3s ease-out;
-  }
-
-  .typing-indicator {
-    @apply flex space-x-1;
-  }
-
-  .typing-dot {
-    @apply w-2 h-2 bg-aurora-violet rounded-full animate-pulse-soft;
-    animation-delay: 0s;
-  }
-
-  .typing-dot:nth-child(2) {
-    animation-delay: 0.2s;
-  }
-
-  .typing-dot:nth-child(3) {
-    animation-delay: 0.4s;
-  }
-}
-
-/* Custom scrollbar for chat */
-.chat-container::-webkit-scrollbar {
+/* Scrollbar personalizada */
+::-webkit-scrollbar {
   width: 6px;
 }
 
-.chat-container::-webkit-scrollbar-track {
-  background: rgba(232, 213, 237, 0.3);
-  border-radius: 3px;
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
 }
 
-.chat-container::-webkit-scrollbar-thumb {
-  background: rgba(139, 90, 150, 0.5);
-  border-radius: 3px;
+::-webkit-scrollbar-thumb {
+  background: var(--color-primario);
+  border-radius: 10px;
+  opacity: 0.7;
 }
 
-.chat-container::-webkit-scrollbar-thumb:hover {
-  background: rgba(139, 90, 150, 0.7);
+::-webkit-scrollbar-thumb:hover {
+  background: #e47429;
+}
+
+/* Estilos para botones */
+.btn-primary {
+  background: linear-gradient(135deg, var(--color-primario), #e47429);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 134, 52, 0.3);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Input styles */
+.input-aurora {
+  border: 2px solid var(--color-borde);
+  border-radius: 12px;
+  padding: 12px 16px;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.input-aurora:focus {
+  outline: none;
+  border-color: var(--color-primario);
+  box-shadow: 0 0 0 3px rgba(245, 134, 52, 0.1);
+}
+
+/* Message bubbles */
+.message-bubble {
+  border-radius: 18px;
+  padding: 12px 16px;
+  max-width: 80%;
+  word-wrap: break-word;
+  position: relative;
+}
+
+.message-bubble.user {
+  background: var(--color-usuario);
+  color: white;
+  margin-left: auto;
+}
+
+.message-bubble.assistant {
+  background: white;
+  color: var(--color-texto);
+  border: 1px solid var(--color-borde);
+}
+
+/* Sidebar styles */
+.sidebar {
+  background: #f8fafc;
+  border-right: 1px solid var(--color-borde);
+  height: 100vh;
+  width: 260px;
+  position: fixed;
+  left: 0;
+  top: 0;
+  overflow-y: auto;
+}
+
+.sidebar-item {
+  padding: 12px 16px;
+  margin: 4px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sidebar-item:hover {
+  background: var(--color-hover);
+}
+
+.sidebar-item.active {
+  background: var(--color-primario);
+  color: white;
+}
+
+/* Chat container */
+.chat-container {
+  margin-left: 260px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 1000;
+  }
+  
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  
+  .chat-container {
+    margin-left: 0;
+  }
+  
+  .message-bubble {
+    max-width: 90%;
+  }
+}
+
+/* Aurora colors for Tailwind */
+.text-aurora-primario { color: var(--color-primario); }
+.text-aurora-usuario { color: var(--color-usuario); }
+.text-aurora-ia { color: var(--color-ia); }
+.bg-aurora-primario { background-color: var(--color-primario); }
+.bg-aurora-usuario { background-color: var(--color-usuario); }
+.bg-aurora-ia { background-color: var(--color-ia); }
+.border-aurora-primario { border-color: var(--color-primario); }
+
+/* Decorative elements */
+.aurora-glow {
+  filter: blur(40px);
+  opacity: 0.3;
 }
