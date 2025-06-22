@@ -1,10 +1,14 @@
 
 import { useState, useRef, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { ChatHeader } from './ChatHeader';
 import { MessageBubble } from './MessageBubble';
 import { MessageInput } from './MessageInput';
 import { TypingIndicator } from './TypingIndicator';
 import { QuickActions } from './QuickActions';
+import { Sidebar } from './sidebar/Sidebar';
+import { UserOnboarding } from './UserOnboarding';
+import { aiManager } from './ai/AIProviderManager';
 
 interface Message {
   id: string;
@@ -13,18 +17,32 @@ interface Message {
   timestamp: Date;
 }
 
-export const ChatInterface = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      content: '¡Hola! Soy ChatMJ, tu compañera espiritual de Misión Juvenil. Estoy aquí para acompañarte en tu caminar con Cristo, responder tus preguntas sobre la fe, ofrecerte devocionales, ayudarte en momentos difíciles y guiarte en tu crecimiento espiritual. ¿En qué puedo acompañarte hoy? 🙏✨',
-      isUser: false,
-      timestamp: new Date(),
-    },
-  ]);
+interface Conversation {
+  id: string;
+  title: string;
+  updated_at: string;
+}
+
+interface UserContext {
+  name?: string;
+  isAnonymous: boolean;
+  userId: string;
+}
+
+interface ChatInterfaceProps {
+  user: any;
+  darkMode: boolean;
+  onToggleDarkMode: () => void;
+}
+
+export const ChatInterface = ({ user, darkMode, onToggleDarkMode }: ChatInterfaceProps) => {
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [currentConversationId, setCurrentConversationId] = useState<string>();
+  const [userContext, setUserContext] = useState<UserContext | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -35,7 +53,71 @@ export const ChatInterface = () => {
     scrollToBottom();
   }, [messages, isTyping]);
 
+  useEffect(() => {
+    if (user) {
+      loadConversations();
+    }
+  }, [user]);
+
+  const loadConversations = async () => {
+    if (!user) return;
+    
+    const { data } = await supabase
+      .from('conversaciones')
+      .select('*')
+      .eq('usuario_id', user.id)
+      .order('updated_at', { ascending: false });
+    
+    if (data) {
+      setConversations(data);
+    }
+  };
+
+  const handleUserOnboarding = (userData: { name?: string; isAnonymous: boolean }) => {
+    const userId = user?.id || `anon_${Date.now()}`;
+    setUserContext({
+      ...userData,
+      userId
+    });
+    setShowOnboarding(false);
+    
+    // Mensaje de bienvenida
+    const welcomeMessage: Message = {
+      id: '1',
+      content: userData.name 
+        ? `¡Hola ${userData.name}! Soy ChatMJ, tu compañera espiritual de Misión Juvenil. Estoy aquí para acompañarte en tu caminar con Cristo, responder tus preguntas sobre la fe, ofrecerte devocionales, ayudarte en momentos difíciles y guiarte en tu crecimiento espiritual. ¿En qué puedo acompañarte hoy? 🙏✨`
+        : '¡Hola! Soy ChatMJ, tu compañera espiritual de Misión Juvenil. Estoy aquí para acompañarte en tu caminar con Cristo, responder tus preguntas sobre la fe, ofrecerte devocionales, ayudarte en momentos difíciles y guiarte en tu crecimiento espiritual. ¿En qué puedo acompañarte hoy? 🙏✨',
+      isUser: false,
+      timestamp: new Date(),
+    };
+    
+    setMessages([welcomeMessage]);
+    createNewConversation();
+  };
+
+  const createNewConversation = async () => {
+    if (!userContext) return;
+
+    const { data, error } = await supabase
+      .from('conversaciones')
+      .insert({
+        usuario_id: userContext.userId,
+        titulo: 'Nueva conversación',
+        activa: true
+      })
+      .select()
+      .single();
+
+    if (data && !error) {
+      setCurrentConversationId(data.id);
+      setMessages([]);
+      loadConversations();
+    }
+  };
+
   const handleSendMessage = async (content: string) => {
+    if (!userContext || !currentConversationId) return;
+
     // Agregar mensaje del usuario
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -47,25 +129,60 @@ export const ChatInterface = () => {
     setMessages(prev => [...prev, userMessage]);
     setIsTyping(true);
 
-    // Simular respuesta de IA con estilo Aurora Celestial
-    setTimeout(() => {
-      const responses = [
-        "Querido hermano/a, entiendo lo que compartes conmigo. En Cristo encontramos la fortaleza para cada desafío. 'Todo lo puedo en Cristo que me fortalece' (Filipenses 4:13). ¿Te gustaría que oremos juntos por esta situación? 🙏",
-        "Tu corazón busca respuestas, y qué hermoso es que acudas al Señor en este momento. Él dice: 'Clama a mí, y yo te responderé, y te enseñaré cosas grandes y ocultas que tú no conoces' (Jeremías 33:3). ¿Qué más te inquieta en tu corazón? 💙",
-        "Siento la sinceridad en tus palabras. Jesús nos invita: 'Venid a mí todos los que estáis trabajados y cargados, y yo os haré descansar' (Mateo 11:28). Su amor por ti es incondicional. ¿Te gustaría compartir más sobre lo que sientes? ✨",
-        "En Misión Juvenil creemos que cada joven tiene un propósito eterno en Cristo. Tu vida tiene un valor incalculable ante los ojos de Dios. ¿Te gustaría conocer más sobre tu identidad en Cristo? 🌟"
-      ];
+    // Guardar mensaje en BD
+    await supabase.from('mensajes').insert({
+      conversacion_id: currentConversationId,
+      contenido: content,
+      es_usuario: true
+    });
+
+    // Generar respuesta con IA
+    try {
+      const chatHistory = [...messages, userMessage].map(msg => ({
+        role: msg.isUser ? 'user' as const : 'assistant' as const,
+        content: msg.content
+      }));
+
+      const response = await aiManager.generateResponse(chatHistory, userContext);
       
-      const aiResponse: Message = {
+      const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: responses[Math.floor(Math.random() * responses.length)],
+        content: response.message,
         isUser: false,
         timestamp: new Date(),
       };
       
-      setMessages(prev => [...prev, aiResponse]);
+      setMessages(prev => [...prev, aiMessage]);
+
+      // Guardar respuesta de IA en BD
+      await supabase.from('mensajes').insert({
+        conversacion_id: currentConversationId,
+        contenido: response.message,
+        es_usuario: false
+      });
+
+      // Actualizar título de conversación si es el primer mensaje
+      if (messages.length === 1) {
+        const title = content.length > 50 ? content.substring(0, 50) + '...' : content;
+        await supabase
+          .from('conversaciones')
+          .update({ titulo: title })
+          .eq('id', currentConversationId);
+        loadConversations();
+      }
+
+    } catch (error) {
+      console.error('Error generating AI response:', error);
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: 'Lo siento, ha ocurrido un error. Por favor intenta de nuevo. 🙏',
+        isUser: false,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsTyping(false);
-    }, 2000);
+    }
   };
 
   const handleQuickAction = (action: string) => {
@@ -81,14 +198,59 @@ export const ChatInterface = () => {
     }
   };
 
+  const handleNewChat = () => {
+    createNewConversation();
+  };
+
+  const handleSelectConversation = async (conversationId: string) => {
+    setCurrentConversationId(conversationId);
+    
+    // Cargar mensajes de la conversación
+    const { data } = await supabase
+      .from('mensajes')
+      .select('*')
+      .eq('conversacion_id', conversationId)
+      .order('created_at', { ascending: true });
+    
+    if (data) {
+      const loadedMessages: Message[] = data.map(msg => ({
+        id: msg.id,
+        content: msg.contenido,
+        isUser: msg.es_usuario,
+        timestamp: new Date(msg.created_at)
+      }));
+      setMessages(loadedMessages);
+    }
+  };
+
+  if (showOnboarding) {
+    return (
+      <div className="min-h-screen bg-aurora-gradient dark:bg-gray-900 flex items-center justify-center p-4">
+        <UserOnboarding onComplete={handleUserOnboarding} />
+      </div>
+    );
+  }
+
   return (
     <div className={`flex h-screen ${darkMode ? 'dark' : ''}`}>
+      <Sidebar
+        isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
+        onNewChat={handleNewChat}
+        conversations={conversations}
+        currentConversationId={currentConversationId}
+        onSelectConversation={handleSelectConversation}
+        user={user}
+        darkMode={darkMode}
+      />
+      
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col bg-white">
+      <div className="flex-1 flex flex-col bg-white dark:bg-gray-900">
         <ChatHeader 
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
           darkMode={darkMode}
-          onToggleDarkMode={() => setDarkMode(!darkMode)}
+          onToggleDarkMode={onToggleDarkMode}
+          userName={userContext?.name}
         />
         
         {/* Messages Container */}
