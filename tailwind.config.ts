@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -18,6 +19,10 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				'playfair': ['Playfair Display', 'serif'],
+				'inter': ['Inter', 'sans-serif'],
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -61,7 +66,26 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Aurora Celestial Theme Colors
+				aurora: {
+					violet: '#8B5A96',
+					'violet-light': '#B899C4',
+					'violet-soft': '#E8D5ED',
+					celestial: '#87CEEB',
+					'celestial-light': '#B8E0F0',
+					'celestial-soft': '#E5F4FA',
+					gold: '#FFD700',
+					'gold-light': '#FFECB3',
+					'gold-soft': '#FFF9E1',
+					white: '#FFFFFF',
+					'white-soft': '#FEFEFE'
 				}
+			},
+			backgroundImage: {
+				'aurora-gradient': 'linear-gradient(135deg, #E8D5ED 0%, #E5F4FA 50%, #FFF9E1 100%)',
+				'message-gradient': 'linear-gradient(135deg, #B899C4 0%, #B8E0F0 100%)',
+				'header-gradient': 'linear-gradient(90deg, #8B5A96 0%, #87CEEB 100%)',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -84,11 +108,42 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'fade-in': {
+					'0%': {
+						opacity: '0',
+						transform: 'translateY(10px)'
+					},
+					'100%': {
+						opacity: '1',
+						transform: 'translateY(0)'
+					}
+				},
+				'slide-up': {
+					'0%': {
+						opacity: '0',
+						transform: 'translateY(20px)'
+					},
+					'100%': {
+						opacity: '1',
+						transform: 'translateY(0)'
+					}
+				},
+				'pulse-soft': {
+					'0%, 100%': {
+						opacity: '1'
+					},
+					'50%': {
+						opacity: '0.7'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'fade-in': 'fade-in 0.3s ease-out',
+				'slide-up': 'slide-up 0.4s ease-out',
+				'pulse-soft': 'pulse-soft 2s ease-in-out infinite'
 			}
 		}
 	},
