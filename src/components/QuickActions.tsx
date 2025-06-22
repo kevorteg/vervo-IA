@@ -1,5 +1,5 @@
 
-import { Heart, BookOpen, Hands, Cross } from 'lucide-react';
+import { Heart, BookOpen, Hand, Cross } from 'lucide-react';
 
 interface QuickActionsProps {
   onActionClick: (action: string) => void;
@@ -10,7 +10,7 @@ export const QuickActions = ({ onActionClick }: QuickActionsProps) => {
     {
       id: 'prayer',
       label: 'Oración',
-      icon: Hands,
+      icon: Hand,
       color: 'bg-purple-50 text-purple-600 hover:bg-purple-100',
       description: 'Oremos juntos'
     },
