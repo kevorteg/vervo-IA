@@ -142,12 +142,19 @@ export const ChatInterface = ({ user, darkMode, onToggleDarkMode }: ChatInterfac
   };
 
   const handleSendMessage = async (content: string) => {
-    if (!userContext || !currentConversationId || isMessageSending) return;
+    if (!userContext || isMessageSending) return;
 
     setIsMessageSending(true);
 
     try {
-      // Agregar mensaje del usuario
+      // Si no hay conversación activa, crear una nueva
+      if (!currentConversationId) {
+        await createNewConversation();
+        // Esperar un momento para que se cree la conversación
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      // Agregar mensaje del usuario inmediatamente
       const userMessage: Message = {
         id: Date.now().toString(),
         content,
@@ -158,14 +165,18 @@ export const ChatInterface = ({ user, darkMode, onToggleDarkMode }: ChatInterfac
       setMessages(prev => [...prev, userMessage]);
       setIsTyping(true);
 
-      // Guardar mensaje en BD
-      const { error: messageError } = await supabase.from('mensajes').insert({
-        conversacion_id: currentConversationId,
-        contenido: content,
-        es_usuario: true
-      });
+      // Si tenemos una conversación activa, guardar el mensaje
+      if (currentConversationId) {
+        const { error: messageError } = await supabase.from('mensajes').insert({
+          conversacion_id: currentConversationId,
+          contenido: content,
+          es_usuario: true
+        });
 
-      if (messageError) throw messageError;
+        if (messageError) {
+          console.error('Error saving user message:', messageError);
+        }
+      }
 
       // Generar respuesta con IA
       const chatHistory = [...messages, userMessage].map(msg => ({
@@ -184,26 +195,32 @@ export const ChatInterface = ({ user, darkMode, onToggleDarkMode }: ChatInterfac
       
       setMessages(prev => [...prev, aiMessage]);
 
-      // Guardar respuesta de IA en BD
-      const { error: aiMessageError } = await supabase.from('mensajes').insert({
-        conversacion_id: currentConversationId,
-        contenido: response.message,
-        es_usuario: false
-      });
+      // Guardar respuesta de IA en BD si tenemos conversación activa
+      if (currentConversationId) {
+        const { error: aiMessageError } = await supabase.from('mensajes').insert({
+          conversacion_id: currentConversationId,
+          contenido: response.message,
+          es_usuario: false
+        });
 
-      if (aiMessageError) throw aiMessageError;
+        if (aiMessageError) {
+          console.error('Error saving AI message:', aiMessageError);
+        }
 
-      // Actualizar título de conversación si es el primer mensaje
-      if (messages.length === 1) {
-        const title = content.length > 50 ? content.substring(0, 50) + '...' : content;
-        const { error: updateError } = await supabase
-          .from('conversaciones')
-          .update({ titulo: title })
-          .eq('id', currentConversationId);
-        
-        if (updateError) throw updateError;
-        
-        await loadConversations();
+        // Actualizar título de conversación si es necesario
+        if (messages.length <= 1) {
+          const title = content.length > 50 ? content.substring(0, 50) + '...' : content;
+          const { error: updateError } = await supabase
+            .from('conversaciones')
+            .update({ titulo: title, updated_at: new Date().toISOString() })
+            .eq('id', currentConversationId);
+          
+          if (updateError) {
+            console.error('Error updating conversation title:', updateError);
+          } else {
+            await loadConversations();
+          }
+        }
       }
 
     } catch (error) {
@@ -218,7 +235,7 @@ export const ChatInterface = ({ user, darkMode, onToggleDarkMode }: ChatInterfac
       
       toast({
         title: "Error",
-        description: "No se pudo enviar el mensaje",
+        description: "No se pudo enviar el mensaje. Intenta de nuevo.",
         variant: "destructive",
       });
     } finally {
@@ -365,7 +382,7 @@ export const ChatInterface = ({ user, darkMode, onToggleDarkMode }: ChatInterfac
         {/* Message Input */}
         <MessageInput 
           onSendMessage={handleSendMessage} 
-          isDisabled={isMessageSending || !currentConversationId}
+          isDisabled={isMessageSending}
         />
       </div>
 

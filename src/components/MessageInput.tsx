@@ -31,7 +31,7 @@ export const MessageInput = ({ onSendMessage, isDisabled = false }: MessageInput
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
@@ -64,7 +64,7 @@ export const MessageInput = ({ onSendMessage, isDisabled = false }: MessageInput
             ref={textareaRef}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleKeyDown}
             placeholder="Escribe tu mensaje aquí... (Presiona Enter para enviar)"
             className="w-full resize-none border border-gray-300 dark:border-gray-600 rounded-2xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-aurora-primario focus:border-transparent max-h-32 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
             rows={1}
