@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ChatHeader } from './ChatHeader';
@@ -19,7 +18,7 @@ interface Message {
 
 interface Conversation {
   id: string;
-  title: string;
+  titulo: string; // Changed from 'title' to 'titulo' to match database schema
   updated_at: string;
 }
 
