@@ -1,9 +1,6 @@
 
-import { useState } from 'react';
-import { Settings, X, Moon, Sun, Bell, Shield, User, Palette, Volume2, VolumeX, Download, Trash2 } from 'lucide-react';
+import { X, Moon, Sun, Download, Trash2, User, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 
 interface SettingsModalProps {
@@ -12,218 +9,154 @@ interface SettingsModalProps {
   darkMode: boolean;
   onToggleDarkMode: () => void;
   userName?: string;
+  isGuestMode?: boolean;
+  onExitGuestMode?: () => void;
 }
 
 export const SettingsModal = ({ 
   isOpen, 
   onClose, 
   darkMode, 
-  onToggleDarkMode,
-  userName 
+  onToggleDarkMode, 
+  userName,
+  isGuestMode = false,
+  onExitGuestMode 
 }: SettingsModalProps) => {
-  const [notifications, setNotifications] = useState(true);
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [displayName, setDisplayName] = useState(userName || '');
-  const [autoSave, setAutoSave] = useState(true);
   const { toast } = useToast();
 
-  const handleSave = () => {
-    // Guardar configuraciones en localStorage
-    localStorage.setItem('chatmj_settings', JSON.stringify({
-      darkMode,
-      notifications,
-      soundEnabled,
-      displayName,
-      autoSave
-    }));
-    
-    toast({
-      title: "Configuración guardada",
-      description: "Tus preferencias han sido guardadas exitosamente.",
-    });
-    
-    onClose();
-  };
+  if (!isOpen) return null;
 
   const handleExportData = () => {
-    toast({
-      title: "Exportando datos",
-      description: "Preparando descarga de tus conversaciones...",
-    });
-    // Aquí se puede implementar la exportación real
-  };
-
-  const handleClearData = () => {
-    if (confirm('¿Estás seguro de que quieres eliminar todas tus conversaciones? Esta acción no se puede deshacer.')) {
+    if (isGuestMode) {
       toast({
-        title: "Datos eliminados",
-        description: "Todas las conversaciones han sido eliminadas.",
+        title: "No disponible",
+        description: "No hay datos para exportar en modo invitado.",
         variant: "destructive",
       });
-      // Aquí se puede implementar la eliminación real
+      return;
+    }
+
+    // Implementar exportación de datos
+    toast({
+      title: "Exportando datos",
+      description: "Se descargará un archivo con tus conversaciones.",
+    });
+  };
+
+  const handleDeleteData = () => {
+    if (isGuestMode) {
+      toast({
+        title: "No disponible",
+        description: "No hay datos para eliminar en modo invitado.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (confirm('¿Estás seguro de que quieres eliminar todos tus datos? Esta acción no se puede deshacer.')) {
+      // Implementar eliminación de datos
+      toast({
+        title: "Datos eliminados",
+        description: "Todos tus datos han sido eliminados.",
+      });
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800">
-        <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2 text-gray-900 dark:text-white">
-            <Settings className="w-5 h-5" />
-            <span>Configuración</span>
-          </DialogTitle>
-        </DialogHeader>
-        
-        <div className="space-y-6 py-4">
-          {/* Perfil */}
-          <div className="space-y-3">
-            <div className="flex items-center space-x-2">
-              <User className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-              <h3 className="font-medium text-gray-900 dark:text-white">Perfil</h3>
-            </div>
-            <div>
-              <label className="text-sm text-gray-600 dark:text-gray-400 block mb-1">
-                Nombre para mostrar
-              </label>
-              <Input
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Tu nombre"
-                className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-              />
-            </div>
-          </div>
-
-          {/* Apariencia */}
-          <div className="space-y-3">
-            <div className="flex items-center space-x-2">
-              <Palette className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-              <h3 className="font-medium text-gray-900 dark:text-white">Apariencia</h3>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-700 dark:text-gray-300">Modo oscuro</span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onToggleDarkMode}
-                className={`flex items-center space-x-2 ${darkMode ? 'bg-aurora-primario text-white border-aurora-primario' : ''}`}
-              >
-                {darkMode ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
-                <span>{darkMode ? 'Oscuro' : 'Claro'}</span>
-              </Button>
-            </div>
-          </div>
-
-          {/* Notificaciones */}
-          <div className="space-y-3">
-            <div className="flex items-center space-x-2">
-              <Bell className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-              <h3 className="font-medium text-gray-900 dark:text-white">Notificaciones</h3>
-            </div>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-700 dark:text-gray-300">Notificaciones push</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setNotifications(!notifications)}
-                  className={`${notifications ? 'bg-aurora-primario text-white border-aurora-primario' : ''}`}
-                >
-                  {notifications ? 'Activado' : 'Desactivado'}
-                </Button>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-700 dark:text-gray-300">Sonidos</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSoundEnabled(!soundEnabled)}
-                  className={`flex items-center space-x-2 ${soundEnabled ? 'bg-aurora-primario text-white border-aurora-primario' : ''}`}
-                >
-                  {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-                  <span>{soundEnabled ? 'Activado' : 'Desactivado'}</span>
-                </Button>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-700 dark:text-gray-300">Autoguardar conversaciones</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setAutoSave(!autoSave)}
-                  className={`${autoSave ? 'bg-aurora-primario text-white border-aurora-primario' : ''}`}
-                >
-                  {autoSave ? 'Activado' : 'Desactivado'}
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Datos y Privacidad */}
-          <div className="space-y-3">
-            <div className="flex items-center space-x-2">
-              <Shield className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-              <h3 className="font-medium text-gray-900 dark:text-white">Datos y Privacidad</h3>
-            </div>
-            <div className="space-y-3">
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                <p>Tus conversaciones están protegidas y encriptadas.</p>
-                <p className="mt-1">Solo tú y los moderadores autorizados pueden acceder a ellas.</p>
-              </div>
-              
-              <div className="flex flex-col space-y-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleExportData}
-                  className="flex items-center space-x-2"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Exportar mis datos</span>
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleClearData}
-                  className="flex items-center space-x-2 text-red-600 hover:text-red-700 border-red-300 hover:border-red-400"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Eliminar todas las conversaciones</span>
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Información de la App */}
-          <div className="space-y-3">
-            <h3 className="font-medium text-gray-900 dark:text-white">Información</h3>
-            <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-              <p><strong>Versión:</strong> 1.0.0</p>
-              <p><strong>Desarrollado por:</strong> Misión Juvenil</p>
-              <p><strong>Última actualización:</strong> Diciembre 2024</p>
-            </div>
-          </div>
-
-          {/* Botones de acción */}
-          <div className="flex space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <Button
-              onClick={handleSave}
-              className="flex-1 bg-aurora-primario hover:bg-orange-600 text-white"
-            >
-              Guardar cambios
-            </Button>
-            <Button
-              variant="outline"
-              onClick={onClose}
-              className="flex-1 border-gray-300 dark:border-gray-600"
-            >
-              Cancelar
-            </Button>
-          </div>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-md">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Configuración</h2>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          >
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
         </div>
-      </DialogContent>
-    </Dialog>
+
+        <div className="space-y-6">
+          {/* Información del usuario */}
+          <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            {isGuestMode ? (
+              <UserX className="w-8 h-8 text-gray-400" />
+            ) : (
+              <User className="w-8 h-8 text-gray-400" />
+            )}
+            <div>
+              <p className="font-medium text-gray-900 dark:text-white">
+                {isGuestMode ? 'Usuario Invitado' : (userName || 'Usuario')}
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {isGuestMode ? 'Sesión temporal' : 'Usuario registrado'}
+              </p>
+            </div>
+          </div>
+
+          {/* Tema */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-medium text-gray-900 dark:text-white">Tema</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Cambia entre modo claro y oscuro
+              </p>
+            </div>
+            <button
+              onClick={onToggleDarkMode}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            >
+              {darkMode ? (
+                <Sun className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              ) : (
+                <Moon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              )}
+            </button>
+          </div>
+
+          {/* Datos del usuario */}
+          <div className="space-y-3">
+            <h3 className="font-medium text-gray-900 dark:text-white">Datos del usuario</h3>
+            
+            <Button
+              onClick={handleExportData}
+              variant="outline"
+              className="w-full justify-start space-x-2"
+              disabled={isGuestMode}
+            >
+              <Download className="w-4 h-4" />
+              <span>Exportar mis datos</span>
+            </Button>
+            
+            <Button
+              onClick={handleDeleteData}
+              variant="outline"
+              className="w-full justify-start space-x-2 text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+              disabled={isGuestMode}
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Eliminar todos mis datos</span>
+            </Button>
+          </div>
+
+          {/* Salir del modo invitado */}
+          {isGuestMode && onExitGuestMode && (
+            <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+              <Button
+                onClick={() => {
+                  onExitGuestMode();
+                  onClose();
+                }}
+                className="w-full bg-aurora-primario hover:bg-orange-600 text-white"
+              >
+                Registrarse / Iniciar sesión
+              </Button>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+                Registrándote podrás guardar tus conversaciones
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };

@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { 
   MessageSquare, 
@@ -8,14 +9,14 @@ import {
   Book, 
   User,
   HelpCircle,
-  Moon,
-  Sun,
-  LogOut
+  LogOut,
+  UserX
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { HelpModal } from '../HelpModal';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Conversation {
   id: string;

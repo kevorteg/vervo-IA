@@ -17,15 +17,12 @@ const Index = () => {
   });
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
-    });
-
-    // Listen for auth changes
+    console.log('Setting up auth listener...');
+    
+    // Listen for auth changes first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setLoading(false);
         if (session) {
@@ -34,7 +31,17 @@ const Index = () => {
       }
     );
 
-    return () => subscription.unsubscribe();
+    // Then get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session:', session?.user?.email);
+      setSession(session);
+      setLoading(false);
+    });
+
+    return () => {
+      console.log('Cleaning up auth subscription');
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -47,13 +54,19 @@ const Index = () => {
   };
 
   const handleLoginSuccess = () => {
-    // Auth state change will be handled by the listener
+    console.log('Login success callback');
     setIsGuestMode(false);
   };
 
   const handleGuestMode = () => {
+    console.log('Entering guest mode');
     setIsGuestMode(true);
     setLoading(false);
+  };
+
+  const handleExitGuestMode = () => {
+    console.log('Exiting guest mode');
+    setIsGuestMode(false);
   };
 
   if (loading) {
@@ -73,14 +86,12 @@ const Index = () => {
     return (
       <div className={`min-h-screen bg-aurora-gradient dark:bg-gray-900 flex items-center justify-center p-4 ${darkMode ? 'dark' : ''}`}>
         <div className="w-full max-w-6xl flex items-center justify-center">
-          {/* Login Section */}
           <div className="w-full max-w-md">
             <LoginForm 
               onSuccess={handleLoginSuccess} 
               onGuestMode={handleGuestMode}
             />
             
-            {/* Dark Mode Toggle for login page */}
             <div className="flex justify-center mt-6">
               <button
                 onClick={handleToggleDarkMode}
@@ -92,7 +103,6 @@ const Index = () => {
           </div>
         </div>
         
-        {/* Decorative elements */}
         <div className="fixed top-10 left-10 w-20 h-20 bg-aurora-violet/10 rounded-full blur-xl"></div>
         <div className="fixed top-32 right-20 w-16 h-16 bg-aurora-celestial/10 rounded-full blur-lg"></div>
         <div className="fixed bottom-20 left-32 w-12 h-12 bg-aurora-gold/10 rounded-full blur-md"></div>
@@ -108,7 +118,7 @@ const Index = () => {
         darkMode={darkMode}
         onToggleDarkMode={handleToggleDarkMode}
         isGuestMode={isGuestMode}
-        onExitGuestMode={() => setIsGuestMode(false)}
+        onExitGuestMode={handleExitGuestMode}
       />
     </div>
   );

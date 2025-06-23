@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Mail, Lock, UserX } from 'lucide-react';
-import { SocialAuthButtons } from './SocialAuthButtons';
 
 interface LoginFormProps {
   onSuccess: () => void;
@@ -51,24 +50,6 @@ export const LoginForm = ({ onSuccess, onGuestMode }: LoginFormProps) => {
     }
   };
 
-  const handleSocialAuth = async (provider: 'google' | 'github') => {
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: `${window.location.origin}/`
-        }
-      });
-      if (error) throw error;
-    } catch (error: any) {
-      setError(error.message || 'Error al iniciar sesión con ' + provider);
-      setIsLoading(false);
-    }
-  };
-
   return (
     <div className="w-full max-w-md mx-auto bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-xl">
       <div className="text-center mb-8">
@@ -88,24 +69,6 @@ export const LoginForm = ({ onSuccess, onGuestMode }: LoginFormProps) => {
           <p className="text-red-700 dark:text-red-400 text-sm">{error}</p>
         </div>
       )}
-
-      {/* Social Auth Buttons */}
-      <SocialAuthButtons 
-        onGoogleAuth={() => handleSocialAuth('google')}
-        onGitHubAuth={() => handleSocialAuth('github')}
-        isLoading={isLoading}
-      />
-
-      <div className="relative my-6">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-gray-300 dark:border-gray-600" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-white dark:bg-gray-800 px-2 text-gray-500 dark:text-gray-400">
-            O continúa con email
-          </span>
-        </div>
-      </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
@@ -169,18 +132,17 @@ export const LoginForm = ({ onSuccess, onGuestMode }: LoginFormProps) => {
         </button>
       </div>
 
-      {/* Guest Mode Button */}
-      <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+      {/* Guest Mode Button - Ahora prioritario */}
+      <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
         <Button
           onClick={onGuestMode}
-          variant="outline"
-          className="w-full h-12 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300"
+          className="w-full h-12 bg-gradient-to-r from-aurora-primario to-orange-600 hover:from-orange-600 hover:to-aurora-primario text-white font-medium"
         >
           <UserX className="w-4 h-4 mr-2" />
           Continuar como invitado
         </Button>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-          Acceso limitado • Las conversaciones no se guardarán
+          Acceso inmediato • Conversa sin registrarte
         </p>
       </div>
     </div>
