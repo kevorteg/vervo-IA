@@ -11,7 +11,7 @@ interface SidebarProps {
   onNewChat: () => void;
   conversations: Array<{
     id: string;
-    title: string;
+    titulo: string; // Changed from 'title' to 'titulo' to match database schema
     updated_at: string;
   }>;
   currentConversationId?: string;
@@ -34,7 +34,7 @@ export const Sidebar = ({
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   const filteredConversations = conversations.filter(conv => 
-    conv.title.toLowerCase().includes(searchQuery.toLowerCase())
+    conv.titulo.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleSignOut = async () => {
@@ -117,7 +117,7 @@ export const Sidebar = ({
               >
                 <MessageSquare className="w-4 h-4 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="truncate text-sm font-medium">{conversation.title}</p>
+                  <p className="truncate text-sm font-medium">{conversation.titulo}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     {new Date(conversation.updated_at).toLocaleDateString()}
                   </p>
