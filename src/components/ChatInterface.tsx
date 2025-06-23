@@ -28,22 +28,31 @@ interface UserContext {
   name?: string;
   isAnonymous: boolean;
   userId: string;
+  isGuest?: boolean;
 }
 
 interface ChatInterfaceProps {
   user: any;
   darkMode: boolean;
   onToggleDarkMode: () => void;
+  isGuestMode?: boolean;
+  onExitGuestMode?: () => void;
 }
 
-export const ChatInterface = ({ user, darkMode, onToggleDarkMode }: ChatInterfaceProps) => {
+export const ChatInterface = ({ 
+  user, 
+  darkMode, 
+  onToggleDarkMode, 
+  isGuestMode = false,
+  onExitGuestMode 
+}: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string>();
   const [userContext, setUserContext] = useState<UserContext | null>(null);
-  const [showOnboarding, setShowOnboarding] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(!isGuestMode);
   const [isMessageSending, setIsMessageSending] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -58,13 +67,35 @@ export const ChatInterface = ({ user, darkMode, onToggleDarkMode }: ChatInterfac
   }, [messages, isTyping]);
 
   useEffect(() => {
-    if (user) {
+    if (user && !isGuestMode) {
       loadConversations();
     }
-  }, [user]);
+  }, [user, isGuestMode]);
+
+  // Configuración automática para modo invitado
+  useEffect(() => {
+    if (isGuestMode && !userContext) {
+      setUserContext({
+        isAnonymous: true,
+        userId: `guest_${Date.now()}`,
+        isGuest: true
+      });
+      setShowOnboarding(false);
+      
+      // Mensaje de bienvenida para invitados
+      const welcomeMessage: Message = {
+        id: '1',
+        content: '¡Hola! Soy ChatMJ, tu compañera espiritual de Misión Juvenil. Estás usando el modo invitado, por lo que las conversaciones no se guardarán. Estoy aquí para acompañarte en tu caminar con Cristo, responder tus preguntas sobre la fe y ofrecerte guía espiritual. ¿En qué puedo acompañarte hoy? 🙏✨',
+        isUser: false,
+        timestamp: new Date(),
+      };
+      
+      setMessages([welcomeMessage]);
+    }
+  }, [isGuestMode, userContext]);
 
   const loadConversations = async () => {
-    if (!user) return;
+    if (!user || isGuestMode) return;
     
     try {
       const { data, error } = await supabase
@@ -92,7 +123,8 @@ export const ChatInterface = ({ user, darkMode, onToggleDarkMode }: ChatInterfac
     const userId = user?.id || `anon_${Date.now()}`;
     setUserContext({
       ...userData,
-      userId
+      userId,
+      isGuest: isGuestMode
     });
     setShowOnboarding(false);
     
@@ -107,11 +139,14 @@ export const ChatInterface = ({ user, darkMode, onToggleDarkMode }: ChatInterfac
     };
     
     setMessages([welcomeMessage]);
-    createNewConversation();
+    
+    if (!isGuestMode) {
+      createNewConversation();
+    }
   };
 
   const createNewConversation = async () => {
-    if (!userContext) return;
+    if (!userContext || isGuestMode) return;
 
     try {
       const { data, error } = await supabase
@@ -147,8 +182,8 @@ export const ChatInterface = ({ user, darkMode, onToggleDarkMode }: ChatInterfac
     setIsMessageSending(true);
 
     try {
-      // Si no hay conversación activa, crear una nueva
-      if (!currentConversationId) {
+      // Si no hay conversación activa y no es modo invitado, crear una nueva
+      if (!currentConversationId && !isGuestMode) {
         await createNewConversation();
         // Esperar un momento para que se cree la conversación
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -165,8 +200,8 @@ export const ChatInterface = ({ user, darkMode, onToggleDarkMode }: ChatInterfac
       setMessages(prev => [...prev, userMessage]);
       setIsTyping(true);
 
-      // Si tenemos una conversación activa, guardar el mensaje
-      if (currentConversationId) {
+      // Si tenemos una conversación activa y no es modo invitado, guardar el mensaje
+      if (currentConversationId && !isGuestMode) {
         const { error: messageError } = await supabase.from('mensajes').insert({
           conversacion_id: currentConversationId,
           contenido: content,
@@ -195,8 +230,8 @@ export const ChatInterface = ({ user, darkMode, onToggleDarkMode }: ChatInterfac
       
       setMessages(prev => [...prev, aiMessage]);
 
-      // Guardar respuesta de IA en BD si tenemos conversación activa
-      if (currentConversationId) {
+      // Guardar respuesta de IA en BD si tenemos conversación activa y no es modo invitado
+      if (currentConversationId && !isGuestMode) {
         const { error: aiMessageError } = await supabase.from('mensajes').insert({
           conversacion_id: currentConversationId,
           contenido: response.message,
@@ -260,10 +295,14 @@ export const ChatInterface = ({ user, darkMode, onToggleDarkMode }: ChatInterfac
   const handleNewChat = () => {
     setMessages([]);
     setCurrentConversationId(undefined);
-    createNewConversation();
+    if (!isGuestMode) {
+      createNewConversation();
+    }
   };
 
   const handleSelectConversation = async (conversationId: string) => {
+    if (isGuestMode) return;
+    
     setCurrentConversationId(conversationId);
     
     try {
@@ -315,7 +354,7 @@ export const ChatInterface = ({ user, darkMode, onToggleDarkMode }: ChatInterfac
     setShowSettings(false);
   };
 
-  if (showOnboarding) {
+  if (showOnboarding && !isGuestMode) {
     return (
       <div className="min-h-screen bg-aurora-gradient dark:bg-gray-900 flex items-center justify-center p-4">
         <UserOnboarding onComplete={handleUserOnboarding} />
@@ -336,6 +375,8 @@ export const ChatInterface = ({ user, darkMode, onToggleDarkMode }: ChatInterfac
         darkMode={darkMode}
         onContactLeader={handleContactLeader}
         onOpenSettings={handleOpenSettings}
+        isGuestMode={isGuestMode}
+        onExitGuestMode={onExitGuestMode}
       />
       
       {/* Chat Area */}
@@ -345,6 +386,7 @@ export const ChatInterface = ({ user, darkMode, onToggleDarkMode }: ChatInterfac
           darkMode={darkMode}
           onToggleDarkMode={onToggleDarkMode}
           userName={userContext?.name}
+          isGuestMode={isGuestMode}
         />
         
         {/* Messages Container */}
@@ -361,6 +403,11 @@ export const ChatInterface = ({ user, darkMode, onToggleDarkMode }: ChatInterfac
                 <p className="text-gray-600 dark:text-gray-400">
                   Comienza una conversación o selecciona una de las opciones rápidas
                 </p>
+                {isGuestMode && (
+                  <p className="text-sm text-orange-500 dark:text-orange-400 mt-2">
+                    Modo invitado • Las conversaciones no se guardarán
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -393,6 +440,8 @@ export const ChatInterface = ({ user, darkMode, onToggleDarkMode }: ChatInterfac
         darkMode={darkMode}
         onToggleDarkMode={onToggleDarkMode}
         userName={userContext?.name}
+        isGuestMode={isGuestMode}
+        onExitGuestMode={onExitGuestMode}
       />
     </div>
   );

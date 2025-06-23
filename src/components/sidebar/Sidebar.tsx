@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { 
   MessageSquare, 
@@ -35,6 +34,8 @@ interface SidebarProps {
   darkMode: boolean;
   onContactLeader: () => void;
   onOpenSettings: () => void;
+  isGuestMode?: boolean;
+  onExitGuestMode?: () => void;
 }
 
 export const Sidebar = ({
@@ -48,6 +49,8 @@ export const Sidebar = ({
   darkMode,
   onContactLeader,
   onOpenSettings,
+  isGuestMode = false,
+  onExitGuestMode,
 }: SidebarProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showHelp, setShowHelp] = useState(false);
@@ -71,13 +74,24 @@ export const Sidebar = ({
     }
   };
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    if (isGuestMode && onExitGuestMode) {
+      if (confirm('¿Estás seguro de que quieres salir del modo invitado?')) {
+        onExitGuestMode();
+      }
+      return;
+    }
+    
     if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
-      // Aquí se implementaría el cierre de sesión real
-      toast({
-        title: "Sesión cerrada",
-        description: "Has cerrado sesión exitosamente.",
-      });
+      try {
+        await supabase.auth.signOut();
+        toast({
+          title: "Sesión cerrada",
+          description: "Has cerrado sesión exitosamente.",
+        });
+      } catch (error) {
+        console.error('Error signing out:', error);
+      }
     }
   };
 
@@ -93,7 +107,12 @@ export const Sidebar = ({
               <div className="w-8 h-8 rounded-full bg-aurora-primario flex items-center justify-center">
                 <span className="text-white font-bold text-sm">MJ</span>
               </div>
-              <span className="font-semibold text-gray-900 dark:text-white">ChatMJ</span>
+              <div>
+                <span className="font-semibold text-gray-900 dark:text-white">ChatMJ</span>
+                {isGuestMode && (
+                  <span className="block text-xs text-orange-500 dark:text-orange-400">Modo Invitado</span>
+                )}
+              </div>
             </div>
           </div>
           
@@ -102,26 +121,38 @@ export const Sidebar = ({
             className="w-full bg-aurora-primario hover:bg-orange-600 text-white flex items-center space-x-2"
           >
             <Plus className="w-4 h-4" />
-            <span>Nueva conversación</span>
+            <span>{isGuestMode ? 'Nueva conversación temporal' : 'Nueva conversación'}</span>
           </Button>
         </div>
 
-        {/* Search */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
-              placeholder="Buscar conversaciones..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-            />
+        {/* Search - Solo mostrar si no es modo invitado */}
+        {!isGuestMode && (
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                placeholder="Buscar conversaciones..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+              />
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Conversations List */}
+        {/* Conversations List o información de modo invitado */}
         <div className="flex-1 overflow-y-auto">
-          {filteredConversations.length === 0 ? (
+          {isGuestMode ? (
+            <div className="p-4 text-center">
+              <UserX className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+              <p className="text-gray-500 dark:text-gray-400 text-sm mb-2">
+                Estás en modo invitado
+              </p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">
+                Las conversaciones no se guardan. Regístrate para acceder a todas las funcionalidades.
+              </p>
+            </div>
+          ) : filteredConversations.length === 0 ? (
             <div className="p-4 text-center">
               <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-2" />
               <p className="text-gray-500 dark:text-gray-400 text-sm">
@@ -198,29 +229,30 @@ export const Sidebar = ({
         </div>
 
         {/* User info */}
-        {user && (
-          <div className="border-t border-gray-200 dark:border-gray-700 p-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
-                <User className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                  {user.email}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">En línea</p>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleSignOut}
-                className="p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-              >
-                <LogOut className="w-4 h-4" />
-              </Button>
+        <div className="border-t border-gray-200 dark:border-gray-700 p-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
+              {isGuestMode ? <UserX className="w-4 h-4 text-gray-600 dark:text-gray-400" /> : <User className="w-4 h-4 text-gray-600 dark:text-gray-400" />}
             </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                {isGuestMode ? 'Usuario Invitado' : user?.email || 'Usuario'}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {isGuestMode ? 'Sesión temporal' : 'En línea'}
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSignOut}
+              className="p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+              title={isGuestMode ? 'Salir del modo invitado' : 'Cerrar sesión'}
+            >
+              <LogOut className="w-4 h-4" />
+            </Button>
           </div>
-        )}
+        </div>
       </div>
 
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />

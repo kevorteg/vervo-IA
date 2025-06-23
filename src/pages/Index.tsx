@@ -8,6 +8,7 @@ import { LoginForm } from '@/components/auth/LoginForm';
 const Index = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isGuestMode, setIsGuestMode] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('darkMode') === 'true';
@@ -27,6 +28,9 @@ const Index = () => {
       (event, session) => {
         setSession(session);
         setLoading(false);
+        if (session) {
+          setIsGuestMode(false);
+        }
       }
     );
 
@@ -44,6 +48,12 @@ const Index = () => {
 
   const handleLoginSuccess = () => {
     // Auth state change will be handled by the listener
+    setIsGuestMode(false);
+  };
+
+  const handleGuestMode = () => {
+    setIsGuestMode(true);
+    setLoading(false);
   };
 
   if (loading) {
@@ -59,13 +69,16 @@ const Index = () => {
     );
   }
 
-  if (!session) {
+  if (!session && !isGuestMode) {
     return (
       <div className={`min-h-screen bg-aurora-gradient dark:bg-gray-900 flex items-center justify-center p-4 ${darkMode ? 'dark' : ''}`}>
         <div className="w-full max-w-6xl flex items-center justify-center">
           {/* Login Section */}
           <div className="w-full max-w-md">
-            <LoginForm onSuccess={handleLoginSuccess} />
+            <LoginForm 
+              onSuccess={handleLoginSuccess} 
+              onGuestMode={handleGuestMode}
+            />
             
             {/* Dark Mode Toggle for login page */}
             <div className="flex justify-center mt-6">
@@ -91,9 +104,11 @@ const Index = () => {
   return (
     <div className="min-h-screen">
       <ChatInterface 
-        user={session.user}
+        user={session?.user || null}
         darkMode={darkMode}
         onToggleDarkMode={handleToggleDarkMode}
+        isGuestMode={isGuestMode}
+        onExitGuestMode={() => setIsGuestMode(false)}
       />
     </div>
   );
