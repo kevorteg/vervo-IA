@@ -73,8 +73,12 @@ const Index = () => {
     return (
       <div className="min-h-screen bg-aurora-gradient dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 mx-auto mb-4 bg-aurora-primario rounded-full flex items-center justify-center animate-pulse">
-            <span className="text-white font-bold text-2xl">MJ</span>
+          <div className="w-16 h-16 mx-auto mb-4 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center animate-pulse shadow-lg">
+            <img 
+              src={darkMode ? "/logo-negro.png" : "/logo-azul.png"} 
+              alt="Misión Juvenil"
+              className="w-12 h-12 object-contain"
+            />
           </div>
           <p className="text-gray-600 dark:text-gray-400">Cargando ChatMJ...</p>
         </div>
@@ -82,6 +86,7 @@ const Index = () => {
     );
   }
 
+  // Mostrar interfaz de login si no hay sesión Y no está en modo invitado
   if (!session && !isGuestMode) {
     return (
       <div className={`min-h-screen bg-aurora-gradient dark:bg-gray-900 flex items-center justify-center p-4 ${darkMode ? 'dark' : ''}`}>
@@ -111,6 +116,7 @@ const Index = () => {
     );
   }
 
+  // Mostrar ChatInterface si hay sesión O está en modo invitado
   return (
     <div className="min-h-screen">
       <ChatInterface 

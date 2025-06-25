@@ -105,8 +105,12 @@ export const Sidebar = ({
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 rounded-full bg-aurora-primario flex items-center justify-center">
-                <span className="text-white font-bold text-sm">MJ</span>
+              <div className="w-10 h-10 rounded-full bg-white dark:bg-gray-700 flex items-center justify-center shadow-md">
+                <img 
+                  src={darkMode ? "/logo-negro.png" : "/logo-azul.png"} 
+                  alt="Misión Juvenil"
+                  className="w-8 h-8 object-contain"
+                />
               </div>
               <div>
                 <span className="font-semibold text-gray-900 dark:text-white">ChatMJ</span>

@@ -21,8 +21,12 @@ export const ChatHeader = ({ onToggleSidebar, darkMode, onToggleDarkMode, userNa
         </button>
         
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-full bg-message-gradient flex items-center justify-center">
-            <Bot className="w-4 h-4 text-white" />
+          <div className="w-10 h-10 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center shadow-md">
+            <img 
+              src={darkMode ? "/logo-negro.png" : "/logo-azul.png"} 
+              alt="Misión Juvenil"
+              className="w-8 h-8 object-contain"
+            />
           </div>
           <div>
             <h1 className="text-lg font-semibold text-gray-800 dark:text-white">
