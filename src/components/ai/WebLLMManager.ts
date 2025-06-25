@@ -1,3 +1,4 @@
+
 import { MLCEngine } from "@mlc-ai/web-llm";
 
 interface UserContext {
@@ -45,7 +46,7 @@ export class WebLLMManager {
   private trainingData: ChatMessage[] = [];
   private engine: MLCEngine | null = null;
   private currentModel: string = 'Llama-3.2-1B-Instruct-q4f16_1-MLC';
-  private isLoading = false;
+  private loadingState = false;
 
   constructor() {
     this.loadTrainingData();
@@ -147,12 +148,12 @@ export class WebLLMManager {
 
   // Inicializar Web-LLM con progreso
   async initialize(onProgress?: (progress: { text: string; progress: number }) => void) {
-    if (this.isLoading) {
+    if (this.loadingState) {
       console.log('Ya se está inicializando Web-LLM...');
       return false;
     }
 
-    this.isLoading = true;
+    this.loadingState = true;
     
     try {
       console.log(`Inicializando Web-LLM con modelo: ${this.currentModel}`);
@@ -174,14 +175,14 @@ export class WebLLMManager {
       await this.engine.reload(this.currentModel);
       
       this.isInitialized = true;
-      this.isLoading = false;
+      this.loadingState = false;
       
       console.log(`✅ Web-LLM inicializado exitosamente con ${this.currentModel}`);
       return true;
     } catch (error) {
       console.error('❌ Error inicializando Web-LLM:', error);
       this.isInitialized = false;
-      this.isLoading = false;
+      this.loadingState = false;
       
       // Verificar errores comunes
       if (error instanceof Error) {
@@ -286,7 +287,7 @@ export class WebLLMManager {
 
   // Verificar si está cargando
   isLoading(): boolean {
-    return this.isLoading;
+    return this.loadingState;
   }
 
   // Obtener estadísticas de entrenamiento
@@ -297,7 +298,7 @@ export class WebLLMManager {
       userMessages: this.trainingData.filter(m => m.role === 'user').length,
       assistantMessages: this.trainingData.filter(m => m.role === 'assistant').length,
       isInitialized: this.isInitialized,
-      isLoading: this.isLoading,
+      isLoading: this.loadingState,
       currentModel: this.getCurrentModel(),
       engine: this.engine ? 'Web-LLM' : 'Pattern Matching'
     };
