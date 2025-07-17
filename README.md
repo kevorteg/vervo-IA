@@ -230,11 +230,6 @@ VITE_SUPABASE_ANON_KEY=tu_key_produccion
 - **Email**: contacto@misionjuvenil.org
 - **WhatsApp**: Botón de "Contactar Líder" en la app
 
-### 🙏 Oración y soporte espiritual:
-ChatMJ es más que código - es ministerio. Si necesitas oración o apoyo espiritual mientras desarrollas, no dudes en contactarnos.
-
----
-
 ## 📄 Licencia
 
 Este proyecto está bajo la Licencia MIT - ve el archivo [LICENSE](LICENSE) para más detalles.
