@@ -33,8 +33,8 @@ ChatMJ es más que un chatbot. Es un **compañero espiritual** creado con React,
 
 ```bash
 # Clona el repositorio
-git clone https://github.com/kevorteg/CHATGPT-CRISTIANO
-cd CHATGPT-CRISTIANO
+git clone https://github.com/kevorteg/ChatMjd5
+cd ChatMjd5
 
 # Instala dependencias
 npm install
