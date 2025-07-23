@@ -135,16 +135,7 @@ ChatMJ está diseñado con el estilo **Aurora Celestial**:
 - **Evangelístico**: Siempre apunta a Cristo
 - **Juvenil**: Lenguaje apropiado para jóvenes
 
-### 💬 Ejemplo de respuesta:
-```
-"¡Hermosa pregunta! 💫 La fe se fortalece de varias maneras preciosas: 
-1) Leyendo la Palabra diariamente 📖, 2) Orando constantemente 🙏, 
-3) Congregándote con otros creyentes 👥. Como dice Romanos 10:17: 
-'la fe viene por el oír, y el oír por la palabra de Dios'. 
-¡Dios tiene planes hermosos para tu vida! ✨🌟"
-```
 
----
 
 ## 🔧 Configuración Avanzada
 
