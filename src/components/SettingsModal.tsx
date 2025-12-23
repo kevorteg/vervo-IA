@@ -1,7 +1,9 @@
 
+import { useState, useEffect } from 'react';
 import { X, Moon, Sun, Download, Trash2, User, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -13,18 +15,77 @@ interface SettingsModalProps {
   onExitGuestMode?: () => void;
 }
 
-export const SettingsModal = ({ 
-  isOpen, 
-  onClose, 
-  darkMode, 
-  onToggleDarkMode, 
+export const SettingsModal = ({
+  isOpen,
+  onClose,
+  darkMode,
+  onToggleDarkMode,
   userName,
   isGuestMode = false,
-  onExitGuestMode 
+  onExitGuestMode
 }: SettingsModalProps) => {
   const { toast } = useToast();
 
   if (!isOpen) return null;
+
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen && !isGuestMode) {
+      loadProfile();
+    }
+  }, [isOpen, isGuestMode]);
+
+  const loadProfile = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+        const { data, error } = await (supabase as any)
+          .from('perfiles')
+          .select('avatar_url, rol')
+          .eq('id', user.id)
+          .single();
+
+        if (data) {
+          setAvatarUrl(data.avatar_url || '');
+          setIsAdmin(data.rol === 'admin');
+        }
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!userId) return;
+    setLoading(true);
+    try {
+      const { error } = await (supabase as any)
+        .from('perfiles')
+        .update({ avatar_url: avatarUrl })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Perfil actualizado",
+        description: "Tu foto de perfil se ha guardado correctamente.",
+      });
+      // Force reload or callback if needed, but for now this suffices
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el perfil.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleExportData = () => {
     if (isGuestMode) {
@@ -80,18 +141,47 @@ export const SettingsModal = ({
           <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
             {isGuestMode ? (
               <UserX className="w-8 h-8 text-gray-400" />
+            ) : avatarUrl ? (
+              <img src={avatarUrl} alt="Avatar" className="w-12 h-12 rounded-full object-cover border border-gray-200" />
             ) : (
               <User className="w-8 h-8 text-gray-400" />
             )}
-            <div>
-              <p className="font-medium text-gray-900 dark:text-white">
+            <div className="flex-1">
+              <p className="font-medium text-gray-900 dark:text-white break-all">
                 {isGuestMode ? 'Usuario Invitado' : (userName || 'Usuario')}
               </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {isGuestMode ? 'Sesión temporal' : 'Usuario registrado'}
-              </p>
+              <div className="flex items-center space-x-2">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {isGuestMode ? 'Sesión temporal' : 'Usuario registrado'}
+                </p>
+                {isAdmin && (
+                  <span className="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full font-medium">
+                    Admin
+                  </span>
+                )}
+              </div>
             </div>
           </div>
+
+          {!isGuestMode && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Foto de Perfil (URL)
+              </label>
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={avatarUrl}
+                  onChange={(e) => setAvatarUrl(e.target.value)}
+                  placeholder="https://ejemplo.com/foto.jpg"
+                  className="flex-1 p-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm"
+                />
+                <Button onClick={handleSaveProfile} disabled={loading} size="sm">
+                  {loading ? '...' : 'Guardar'}
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Tema */}
           <div className="flex items-center justify-between">
@@ -116,7 +206,7 @@ export const SettingsModal = ({
           {/* Datos del usuario */}
           <div className="space-y-3">
             <h3 className="font-medium text-gray-900 dark:text-white">Datos del usuario</h3>
-            
+
             <Button
               onClick={handleExportData}
               variant="outline"
@@ -126,7 +216,7 @@ export const SettingsModal = ({
               <Download className="w-4 h-4" />
               <span>Exportar mis datos</span>
             </Button>
-            
+
             <Button
               onClick={handleDeleteData}
               variant="outline"
@@ -146,7 +236,7 @@ export const SettingsModal = ({
                   onExitGuestMode();
                   onClose();
                 }}
-                className="w-full bg-aurora-primario hover:bg-orange-600 text-white"
+                className="w-full bg-aurora-primario hover:bg-purple-700 text-white"
               >
                 Registrarse / Iniciar sesión
               </Button>

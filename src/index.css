@@ -1,4 +1,3 @@
-
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
@@ -6,8 +5,8 @@
 @tailwind utilities;
 
 :root {
-  /* Colores oficiales de Misión Juvenil */
-  --color-primario: #F58634;
+  /* Colores oficiales de Misión Juvenil - Updated to Violet */
+  --color-primario: #9E86B0;
   --color-usuario: #449BD1;
   --color-ia: #473458;
   --color-fondo: #FFFFFF;
@@ -40,25 +39,19 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Aurora gradient background */
+/* Aurora background flattened */
 .bg-aurora-gradient {
-  background: linear-gradient(135deg, 
-    rgba(245, 134, 52, 0.1) 0%, 
-    rgba(68, 155, 209, 0.1) 35%, 
-    rgba(71, 52, 88, 0.1) 100%);
+  background-color: var(--color-fondo);
   min-height: 100vh;
 }
 
 .dark .bg-aurora-gradient {
-  background: linear-gradient(135deg, 
-    rgba(245, 134, 52, 0.05) 0%, 
-    rgba(68, 155, 209, 0.05) 35%, 
-    rgba(71, 52, 88, 0.1) 100%);
+  background-color: var(--color-fondo);
 }
 
-/* Gradientes para elementos especiales */
+/* Gradientes removidos para diseño flat */
 .message-gradient {
-  background: linear-gradient(135deg, var(--color-ia), #5A4270);
+  background-color: var(--color-ia);
 }
 
 .aurora-shadow {
@@ -87,25 +80,46 @@ body {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes pulseGentle {
-  0%, 100% { opacity: 0.8; }
-  50% { opacity: 1; }
+
+  0%,
+  100% {
+    opacity: 0.8;
+  }
+
+  50% {
+    opacity: 1;
+  }
 }
 
 /* Typing indicator */
 .typing-indicator {
   display: flex;
   align-items: center;
-  space-x: 1px;
+  gap: 4px;
 }
 
 .typing-dot {
@@ -117,16 +131,28 @@ body {
   animation: typing 1.4s infinite ease-in-out;
 }
 
-.typing-dot:nth-child(1) { animation-delay: -0.32s; }
-.typing-dot:nth-child(2) { animation-delay: -0.16s; }
-.typing-dot:nth-child(3) { animation-delay: 0; }
+.typing-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+.typing-dot:nth-child(3) {
+  animation-delay: 0;
+}
 
 @keyframes typing {
-  0%, 80%, 100% { 
+
+  0%,
+  80%,
+  100% {
     transform: scale(0.8);
     opacity: 0.5;
   }
-  40% { 
+
+  40% {
     transform: scale(1);
     opacity: 1;
   }
@@ -158,7 +184,7 @@ body {
 
 /* Estilos para botones */
 .btn-primary {
-  background: linear-gradient(135deg, var(--color-primario), #e47429);
+  background: var(--color-primario);
   color: white;
   border: none;
   padding: 12px 24px;
@@ -233,13 +259,33 @@ body {
 }
 
 /* Aurora colors for Tailwind */
-.text-aurora-primario { color: var(--color-primario); }
-.text-aurora-usuario { color: var(--color-usuario); }
-.text-aurora-ia { color: var(--color-ia); }
-.bg-aurora-primario { background-color: var(--color-primario); }
-.bg-aurora-usuario { background-color: var(--color-usuario); }
-.bg-aurora-ia { background-color: var(--color-ia); }
-.border-aurora-primario { border-color: var(--color-primario); }
+.text-aurora-primario {
+  color: var(--color-primario);
+}
+
+.text-aurora-usuario {
+  color: var(--color-usuario);
+}
+
+.text-aurora-ia {
+  color: var(--color-ia);
+}
+
+.bg-aurora-primario {
+  background-color: var(--color-primario);
+}
+
+.bg-aurora-usuario {
+  background-color: var(--color-usuario);
+}
+
+.bg-aurora-ia {
+  background-color: var(--color-ia);
+}
+
+.border-aurora-primario {
+  border-color: var(--color-primario);
+}
 
 /* Decorative elements */
 .aurora-glow {

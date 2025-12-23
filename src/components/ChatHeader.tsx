@@ -19,20 +19,20 @@ export const ChatHeader = ({ onToggleSidebar, darkMode, onToggleDarkMode, userNa
         >
           <Menu className="w-5 h-5 text-gray-600 dark:text-gray-400" />
         </button>
-        
+
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center shadow-md">
-            <img 
-              src={darkMode ? "/logo-negro.png" : "/logo-azul.png"} 
+            <img
+              src={darkMode ? "/logo-negro.png" : "/logo-azul.png"}
               alt="Misión Juvenil"
               className="w-8 h-8 object-contain"
             />
           </div>
           <div>
             <h1 className="text-lg font-semibold text-gray-800 dark:text-white">
-              ChatMJ {userName && `- ${userName}`}
+              Verbo IA {userName && `- ${userName}`}
               {isGuestMode && (
-                <span className="text-sm text-orange-500 dark:text-orange-400 ml-2">(Invitado)</span>
+                <span className="text-sm text-purple-500 dark:text-purple-400 ml-2">(Invitado)</span>
               )}
             </h1>
             <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -47,7 +47,7 @@ export const ChatHeader = ({ onToggleSidebar, darkMode, onToggleDarkMode, userNa
           <MessageSquare className="w-4 h-4" />
           <span>{isGuestMode ? 'Modo Invitado' : 'En línea'}</span>
         </div>
-        
+
         <button
           onClick={onToggleDarkMode}
           className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"

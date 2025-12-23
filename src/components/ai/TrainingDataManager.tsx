@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -30,6 +31,7 @@ export const TrainingDataManager = () => {
     category: 'general'
   });
   const [isLoading, setIsLoading] = useState(false);
+  /* eslint-disable @typescript-eslint/no-explicit-any */
   const [stats, setStats] = useState<any>({});
   const [initProgress, setInitProgress] = useState<InitProgress>({ text: '', progress: 0 });
   const [selectedModel, setSelectedModel] = useState('Llama-3.2-1B-Instruct-q4f16_1-MLC');
@@ -49,7 +51,7 @@ export const TrainingDataManager = () => {
   useEffect(() => {
     loadExistingData();
     updateStats();
-    // Cargar modelo seleccionado del localStorage
+    // Cargar modelo seleccionado del localStorage (config local)
     const savedModel = localStorage.getItem('chatmj_selected_model');
     if (savedModel && AVAILABLE_MODELS[savedModel as keyof typeof AVAILABLE_MODELS]) {
       setSelectedModel(savedModel);
@@ -57,15 +59,34 @@ export const TrainingDataManager = () => {
     }
   }, []);
 
-  const loadExistingData = () => {
-    const saved = localStorage.getItem('chatmj_training_data');
-    if (saved) {
-      try {
-        const data = JSON.parse(saved);
-        setTrainingData(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error('Error loading training data:', error);
+  const loadExistingData = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('entrenamiento')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      if (data) {
+        // Mapear de base de datos a interfaz interna
+        const formattedData: TrainingEntry[] = data.map(item => ({
+          id: item.id,
+          question: item.pregunta,
+          answer: item.respuesta,
+          category: item.categoria || 'general'
+        }));
+        setTrainingData(formattedData);
+        // También actualizar el WebLLM con los datos cargados
+        webLLMManager.loadCustomTrainingData(formattedData);
       }
+    } catch (error) {
+      console.error('Error loading training data:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los datos de entrenamiento.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -78,7 +99,7 @@ export const TrainingDataManager = () => {
     setSelectedModel(modelId);
     webLLMManager.setModel(modelId);
     localStorage.setItem('chatmj_selected_model', modelId);
-    
+
     const modelInfo = AVAILABLE_MODELS[modelId as keyof typeof AVAILABLE_MODELS];
     toast({
       title: "🤖 Modelo seleccionado",
@@ -86,7 +107,7 @@ export const TrainingDataManager = () => {
     });
   };
 
-  const addTrainingEntry = () => {
+  const addTrainingEntry = async () => {
     if (!newEntry.question.trim() || !newEntry.answer.trim()) {
       toast({
         title: "Campos requeridos",
@@ -96,44 +117,88 @@ export const TrainingDataManager = () => {
       return;
     }
 
-    const entry: TrainingEntry = {
-      id: Date.now().toString(),
-      ...newEntry
-    };
+    try {
+      const { data, error } = await supabase
+        .from('entrenamiento')
+        .insert({
+          pregunta: newEntry.question,
+          respuesta: newEntry.answer,
+          categoria: newEntry.category
+        })
+        .select()
+        .single();
 
-    const updatedData = [...trainingData, entry];
-    setTrainingData(updatedData);
-    setNewEntry({ question: '', answer: '', category: 'general' });
-    
-    // Guardar automáticamente
-    localStorage.setItem('chatmj_training_data', JSON.stringify(updatedData));
-    
-    toast({
-      title: "✅ Entrada agregada",
-      description: `Se agregó una nueva entrada en la categoría ${categories.find(c => c.value === entry.category)?.label}`,
-    });
+      if (error) throw error;
+
+      const entry: TrainingEntry = {
+        id: data.id,
+        question: data.pregunta,
+        answer: data.respuesta,
+        category: data.categoria
+      };
+
+      const updatedData = [...trainingData, entry];
+      setTrainingData(updatedData);
+      setNewEntry({ question: '', answer: '', category: 'general' });
+
+      toast({
+        title: "✅ Entrada agregada",
+        description: `Se agregó y guardó en la nube la nueva entrada.`,
+      });
+
+      // Actualizar el modelo en memoria
+      webLLMManager.loadCustomTrainingData(updatedData);
+
+    } catch (error) {
+      console.error('Error adding entry:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo guardar la entrada en Supabase.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const removeEntry = (id: string) => {
-    const updatedData = trainingData.filter(entry => entry.id !== id);
-    setTrainingData(updatedData);
-    localStorage.setItem('chatmj_training_data', JSON.stringify(updatedData));
-    
-    toast({
-      title: "🗑️ Entrada eliminada",
-      description: "Se eliminó la entrada de entrenamiento",
-    });
+  const removeEntry = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('entrenamiento')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      const updatedData = trainingData.filter(entry => entry.id !== id);
+      setTrainingData(updatedData);
+
+      // Actualizar modelo en memoria
+      webLLMManager.loadCustomTrainingData(updatedData);
+
+      toast({
+        title: "🗑️ Entrada eliminada",
+        description: "Se eliminó correctamente de la base de datos.",
+      });
+    } catch (error) {
+      console.error('Error deleting entry:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar la entrada.",
+        variant: "destructive",
+      });
+    }
   };
 
   const saveToWebLLM = async () => {
+    // Ya no es necesario guardar explícitamente ya que lo hacemos al cargar/agregar/borrar
+    // Pero mantenemos la función para forzar una recarga si el usuario quiere
     setIsLoading(true);
     try {
       await webLLMManager.loadCustomTrainingData(trainingData);
       updateStats();
-      
+
       toast({
-        title: "🚀 Entrenamiento actualizado",
-        description: `Se cargaron ${trainingData.length} entradas en Web-LLM`,
+        title: "🚀 Modelo Sincronizado",
+        description: `Datos sincronizados con el motor de IA local.`,
       });
     } catch (error) {
       toast({
@@ -149,14 +214,14 @@ export const TrainingDataManager = () => {
   const initializeWebLLM = async () => {
     setIsLoading(true);
     setInitProgress({ text: 'Iniciando...', progress: 0 });
-    
+
     try {
       const success = await webLLMManager.initialize((progress) => {
         setInitProgress(progress);
       });
-      
+
       updateStats();
-      
+
       if (success) {
         toast({
           title: "🎉 Web-LLM Inicializado",
@@ -190,12 +255,12 @@ export const TrainingDataManager = () => {
       try {
         const content = e.target?.result as string;
         let data = JSON.parse(content);
-        
+
         // Manejar diferentes formatos
         if (!Array.isArray(data)) {
           data = [data];
         }
-        
+
         // Validar formato
         const validData = data.filter(item =>
           item.question && item.answer && typeof item.question === 'string'
@@ -204,10 +269,10 @@ export const TrainingDataManager = () => {
           id: item.id || Date.now().toString() + Math.random(),
           category: item.category || 'general'
         }));
-        
+
         setTrainingData(validData);
         localStorage.setItem('chatmj_training_data', JSON.stringify(validData));
-        
+
         toast({
           title: "📁 Datos cargados",
           description: `Se cargaron ${validData.length} entradas válidas`,
@@ -238,18 +303,18 @@ export const TrainingDataManager = () => {
         }))
       }
     };
-    
+
     const dataStr = JSON.stringify(exportObject, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    
+
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
     link.href = url;
     link.download = `chatmj_training_${new Date().toISOString().split('T')[0]}.json`;
     link.click();
-    
+
     URL.revokeObjectURL(url);
-    
+
     toast({
       title: "📥 Exportación completa",
       description: "Archivo descargado exitosamente",
@@ -259,15 +324,15 @@ export const TrainingDataManager = () => {
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-aurora-primario to-aurora-violet rounded-2xl p-6 text-white">
+      <div className="bg-aurora-primario rounded-2xl p-6 text-white">
         <h2 className="text-3xl font-bold mb-2 flex items-center">
           <Brain className="w-8 h-8 mr-3" />
-          Entrenamiento de ChatMJ
+          Entrenamiento de Verbo IA
         </h2>
         <p className="text-aurora-celestial/90 mb-4">
-          Entrena a ChatMJ con contenido específico de Misión Juvenil usando Web-LLM
+          Entrena a Verbo IA con contenido específico de Misión Juvenil usando Web-LLM
         </p>
-        
+
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
           <div className="bg-white/10 rounded-lg p-3">
@@ -305,11 +370,10 @@ export const TrainingDataManager = () => {
             {Object.entries(AVAILABLE_MODELS).map(([modelId, modelInfo]) => (
               <div
                 key={modelId}
-                className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                  selectedModel === modelId
-                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                    : 'border-gray-200 dark:border-gray-700 hover:border-purple-300'
-                }`}
+                className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${selectedModel === modelId
+                  ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                  : 'border-gray-200 dark:border-gray-700 hover:border-purple-300'
+                  }`}
                 onClick={() => handleModelChange(modelId)}
               >
                 <div className="flex items-center justify-between">
@@ -360,19 +424,19 @@ export const TrainingDataManager = () => {
               <Progress value={initProgress.progress} className="w-full" />
             </div>
           )}
-          
+
           <div className="flex flex-wrap gap-3 mb-4">
-            <Button 
-              onClick={initializeWebLLM} 
+            <Button
+              onClick={initializeWebLLM}
               disabled={isLoading}
-              className="bg-aurora-primario hover:bg-orange-600"
+              className="bg-aurora-primario hover:bg-purple-700"
             >
               <Brain className="w-4 h-4 mr-2" />
               {isLoading ? 'Inicializando...' : 'Inicializar Web-LLM'}
             </Button>
-            
-            <Button 
-              onClick={saveToWebLLM} 
+
+            <Button
+              onClick={saveToWebLLM}
               disabled={isLoading || trainingData.length === 0}
               variant="outline"
             >
@@ -380,11 +444,11 @@ export const TrainingDataManager = () => {
               Cargar datos en IA
             </Button>
           </div>
-          
+
           <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
             <div>
-              {stats.isInitialized ? 
-                `✅ Web-LLM activo con ${stats.currentModel?.name || 'modelo desconocido'}` : 
+              {stats.isInitialized ?
+                `✅ Web-LLM activo con ${stats.currentModel?.name || 'modelo desconocido'}` :
                 '⚠️ Web-LLM no inicializado - usando respuestas por patrones'
               }
             </div>
@@ -447,9 +511,9 @@ export const TrainingDataManager = () => {
               </div>
             </div>
 
-            <Button 
-              onClick={addTrainingEntry} 
-              className="bg-aurora-primario hover:bg-orange-600 w-full"
+            <Button
+              onClick={addTrainingEntry}
+              className="bg-aurora-primario hover:bg-purple-700 w-full"
             >
               <Plus className="w-4 h-4 mr-2" />
               Agregar entrada
@@ -468,15 +532,15 @@ export const TrainingDataManager = () => {
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-3">
-            <Button 
-              onClick={exportData} 
+            <Button
+              onClick={exportData}
               disabled={trainingData.length === 0}
               variant="outline"
             >
               <Download className="w-4 h-4 mr-2" />
               Exportar datos
             </Button>
-            
+
             <div>
               <input
                 type="file"
@@ -523,7 +587,7 @@ export const TrainingDataManager = () => {
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
-                    
+
                     <div className="space-y-3">
                       <div>
                         <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

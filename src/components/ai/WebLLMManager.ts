@@ -58,7 +58,7 @@ export class WebLLMManager {
       this.trainingData = [
         {
           role: "system",
-          content: `Eres ChatMJ, un asistente espiritual cristiano de Misión Juvenil creado con Aurora Celestial. 
+          content: `Eres Verbo IA, un asistente espiritual cristiano de Misión Juvenil creado con Aurora Celestial. 
           Tus características principales:
           - Eres amable, comprensiva y llena de amor cristiano
           - Hablas con estilo poético y empático, usando emojis apropiados
@@ -76,7 +76,7 @@ export class WebLLMManager {
           content: "¿Cómo puedo fortalecer mi fe?"
         },
         {
-          role: "assistant", 
+          role: "assistant",
           content: "¡Hermosa pregunta! 💫 La fe se fortalece de varias maneras preciosas: 1) Leyendo la Palabra de Dios diariamente 📖 - como dice en Romanos 10:17 'la fe viene por el oír, y el oír por la palabra de Dios', 2) Orando constantemente 🙏 - manteniendo esa conexión íntima con Papá Dios, 3) Congregándote con otros creyentes 👥 - el hierro se afila con hierro, 4) Sirviendo a los demás con amor ❤️ - cuando das, recibes bendición, y 5) Recordando las promesas de Dios en tu vida ✨. Recuerda que Él tiene planes de bien para ti (Jeremías 29:11). ¡Dios está contigo siempre, mi querido/a! 🌟"
         },
         {
@@ -122,7 +122,7 @@ export class WebLLMManager {
         - ${library.studies?.length || 0} estudios bíblicos
         - ${library.prayers?.length || 0} oraciones
         Usa este contenido para enriquecer tus respuestas cuando sea apropiado.`;
-        
+
         this.trainingData[0].content += libraryContext;
       }
     } catch (error) {
@@ -154,13 +154,13 @@ export class WebLLMManager {
     }
 
     this.loadingState = true;
-    
+
     try {
       console.log(`Inicializando Web-LLM con modelo: ${this.currentModel}`);
-      
+
       // Crear nueva instancia del engine
       this.engine = new MLCEngine();
-      
+
       // Configurar callback de progreso
       if (onProgress) {
         this.engine.setInitProgressCallback((progress) => {
@@ -170,20 +170,20 @@ export class WebLLMManager {
           });
         });
       }
-      
+
       // Cargar modelo seleccionado
       await this.engine.reload(this.currentModel);
-      
+
       this.isInitialized = true;
       this.loadingState = false;
-      
+
       console.log(`✅ Web-LLM inicializado exitosamente con ${this.currentModel}`);
       return true;
     } catch (error) {
       console.error('❌ Error inicializando Web-LLM:', error);
       this.isInitialized = false;
       this.loadingState = false;
-      
+
       // Verificar errores comunes
       if (error instanceof Error) {
         if (error.message.includes('WebGPU')) {
@@ -192,7 +192,7 @@ export class WebLLMManager {
           console.log('💡 Sugerencia: Intenta con un modelo más ligero (Phi-3.5-mini)');
         }
       }
-      
+
       return false;
     }
   }
@@ -207,9 +207,9 @@ export class WebLLMManager {
         // Usar Web-LLM si está disponible
         const systemMessages = this.trainingData.filter(msg => msg.role === 'system');
         const fullMessages = [...systemMessages, ...messages];
-        
+
         console.log(`🤖 Generando respuesta con ${this.currentModel}...`);
-        
+
         const response = await this.engine.chat.completions.create({
           messages: fullMessages,
           temperature: 0.7,
@@ -218,7 +218,7 @@ export class WebLLMManager {
           frequency_penalty: 0.1,
           presence_penalty: 0.1,
         });
-        
+
         return {
           message: response.choices[0]?.message?.content || "Lo siento, no pude generar una respuesta.",
           model: `Web-LLM (${AVAILABLE_MODELS[this.currentModel as keyof typeof AVAILABLE_MODELS].name})`
@@ -230,7 +230,8 @@ export class WebLLMManager {
     } catch (error) {
       console.error('Error generating WebLLM response:', error);
       // Fallback en caso de error
-      return this.generatePatternResponse(messages, userContext);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return { message: "Error generating response", model: "Error" };
     }
   }
 
@@ -264,16 +265,17 @@ export class WebLLMManager {
   }
 
   // Cargar datos de entrenamiento personalizados
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async loadCustomTrainingData(data: any[]) {
     try {
       const formattedMessages = data.flatMap(entry => [
         { role: 'user' as const, content: entry.question },
         { role: 'assistant' as const, content: entry.answer }
       ]);
-      
+
       this.trainingData.push(...formattedMessages);
       console.log('Custom training data loaded:', data.length, 'entries');
-      
+
       // Si Web-LLM está inicializado, no necesita reiniciar - los datos se usan en el próximo chat
     } catch (error) {
       console.error('Error loading custom training data:', error);

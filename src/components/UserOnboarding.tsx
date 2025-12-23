@@ -22,7 +22,7 @@ export const UserOnboarding = ({ onComplete }: UserOnboardingProps) => {
       setShowNameInput(true);
       return;
     }
-    
+
     if (name.trim()) {
       onComplete({ name: name.trim(), isAnonymous: false });
     }
@@ -31,11 +31,11 @@ export const UserOnboarding = ({ onComplete }: UserOnboardingProps) => {
   return (
     <div className="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-xl">
       <div className="text-center mb-8">
-        <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-aurora-primario to-aurora-usuario rounded-full flex items-center justify-center">
+        <div className="w-16 h-16 mx-auto mb-4 bg-aurora-primario rounded-full flex items-center justify-center">
           <span className="text-white font-bold text-2xl">MJ</span>
         </div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          ¡Bienvenido a ChatMJ! 🙏
+          ¡Bienvenido a Verbo IA! 🙏
         </h1>
         <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
           Soy tu compañera espiritual de Misión Juvenil. Estoy aquí para acompañarte en tu caminar con Cristo.
@@ -68,7 +68,7 @@ export const UserOnboarding = ({ onComplete }: UserOnboardingProps) => {
             <Button
               onClick={handleWithName}
               disabled={!name.trim()}
-              className="w-full h-12 bg-aurora-primario hover:bg-orange-600 text-white"
+              className="w-full h-12 bg-aurora-primario hover:bg-purple-700 text-white"
             >
               <User className="w-4 h-4 mr-2" />
               Continuar como {name || 'usuario'}
@@ -80,12 +80,12 @@ export const UserOnboarding = ({ onComplete }: UserOnboardingProps) => {
           <div className="space-y-3">
             <Button
               onClick={handleWithName}
-              className="w-full h-12 bg-aurora-primario hover:bg-orange-600 text-white"
+              className="w-full h-12 bg-aurora-primario hover:bg-purple-700 text-white"
             >
               <User className="w-4 h-4 mr-2" />
               Quiero decirte mi nombre
             </Button>
-            
+
             <Button
               onClick={handleAnonymous}
               variant="outline"

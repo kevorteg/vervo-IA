@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { User } from '@supabase/supabase-js';
 import { ChatHeader } from './ChatHeader';
 import { MessageBubble } from './MessageBubble';
 import { MessageInput } from './MessageInput';
@@ -32,19 +33,21 @@ interface UserContext {
 }
 
 interface ChatInterfaceProps {
-  user: any;
+  user: User | null;
   darkMode: boolean;
   onToggleDarkMode: () => void;
   isGuestMode?: boolean;
   onExitGuestMode?: () => void;
+  isAdmin?: boolean;
 }
 
-export const ChatInterface = ({ 
-  user, 
-  darkMode, 
-  onToggleDarkMode, 
+export const ChatInterface = ({
+  user,
+  darkMode,
+  onToggleDarkMode,
   isGuestMode = false,
-  onExitGuestMode 
+  onExitGuestMode,
+  isAdmin = false
 }: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
@@ -52,7 +55,7 @@ export const ChatInterface = ({
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string>();
   const [userContext, setUserContext] = useState<UserContext | null>(null);
-  const [showOnboarding, setShowOnboarding] = useState(!isGuestMode);
+  const [showOnboarding, setShowOnboarding] = useState(false); // Default false initially
   const [isMessageSending, setIsMessageSending] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -72,45 +75,56 @@ export const ChatInterface = ({
     }
   }, [user, isGuestMode]);
 
-  // Configuración automática para modo invitado
   useEffect(() => {
-    if (isGuestMode && !userContext) {
-      setUserContext({
-        isAnonymous: true,
-        userId: `guest_${Date.now()}`,
-        isGuest: true
-      });
+    if (isGuestMode) {
       setShowOnboarding(false);
-      
-      // Mensaje de bienvenida para invitados
-      const welcomeMessage: Message = {
-        id: '1',
-        content: '¡Hola! Soy ChatMJ, tu compañera espiritual de Misión Juvenil. Estás usando el modo invitado, por lo que las conversaciones no se guardarán. Estoy aquí para acompañarte en tu caminar con Cristo, responder tus preguntas sobre la fe y ofrecerte guía espiritual. ¿En qué puedo acompañarte hoy? 🙏✨',
-        isUser: false,
-        timestamp: new Date(),
-      };
-      
-      setMessages([welcomeMessage]);
+      if (!userContext) {
+        setUserContext({
+          isAnonymous: true,
+          userId: `guest_${Date.now()}`,
+          isGuest: true
+        });
+
+        const welcomeMessage: Message = {
+          id: '1',
+          content: '¡Hola! Soy Verbo IA, tu compañera espiritual de Misión Juvenil. Estás usando el modo invitado, por lo que las conversaciones no se guardarán. Estoy aquí para acompañarte en tu caminar con Cristo, responder tus preguntas sobre la fe y ofrecerte guía espiritual. ¿En qué puedo acompañarte hoy?',
+          isUser: false,
+          timestamp: new Date(),
+        };
+        setMessages([welcomeMessage]);
+      }
+    } else if (user) {
+      // Check local storage for user profile
+      const storedName = localStorage.getItem(`verbo_user_name_${user.id}`);
+      if (storedName) {
+        setUserContext({
+          name: storedName,
+          isAnonymous: false,
+          userId: user.id
+        });
+        setShowOnboarding(false);
+      } else {
+        setShowOnboarding(true);
+      }
     }
-  }, [isGuestMode, userContext]);
+  }, [isGuestMode, user]);
 
   const loadConversations = async () => {
     if (!user || isGuestMode) return;
-    
+
     try {
       const { data, error } = await supabase
         .from('conversaciones')
         .select('*')
         .eq('usuario_id', user.id)
         .order('updated_at', { ascending: false });
-      
+
       if (error) throw error;
-      
+
       if (data) {
         setConversations(data);
       }
     } catch (error) {
-      console.error('Error loading conversations:', error);
       toast({
         title: "Error",
         description: "No se pudieron cargar las conversaciones",
@@ -121,25 +135,30 @@ export const ChatInterface = ({
 
   const handleUserOnboarding = (userData: { name?: string; isAnonymous: boolean }) => {
     const userId = user?.id || `anon_${Date.now()}`;
+
+    if (user && userData.name) {
+      localStorage.setItem(`verbo_user_name_${user.id}`, userData.name);
+    }
+
     setUserContext({
       ...userData,
       userId,
       isGuest: isGuestMode
     });
     setShowOnboarding(false);
-    
+
     // Mensaje de bienvenida
     const welcomeMessage: Message = {
       id: '1',
-      content: userData.name 
-        ? `¡Hola ${userData.name}! Soy ChatMJ, tu compañera espiritual de Misión Juvenil. Estoy aquí para acompañarte en tu caminar con Cristo, responder tus preguntas sobre la fe, ofrecerte devocionales, ayudarte en momentos difíciles y guiarte en tu crecimiento espiritual. ¿En qué puedo acompañarte hoy? 🙏✨`
-        : '¡Hola! Soy ChatMJ, tu compañera espiritual de Misión Juvenil. Estoy aquí para acompañarte en tu caminar con Cristo, responder tus preguntas sobre la fe, ofrecerte devocionales, ayudarte en momentos difíciles y guiarte en tu crecimiento espiritual. ¿En qué puedo acompañarte hoy? 🙏✨',
+      content: userData.name
+        ? `¡Hola ${userData.name}! Soy Verbo IA, tu compañera espiritual de Misión Juvenil. Estoy aquí para acompañarte en tu caminar con Cristo, responder tus preguntas sobre la fe, ofrecerte devocionales, ayudarte en momentos difíciles y guiarte en tu crecimiento espiritual. ¿En qué puedo acompañarte hoy?`
+        : '¡Hola! Soy Verbo IA, tu compañera espiritual de Misión Juvenil. Estoy aquí para acompañarte en tu caminar con Cristo, responder tus preguntas sobre la fe, ofrecerte devocionales, ayudarte en momentos difíciles y guiarte en tu crecimiento espiritual. ¿En qué puedo acompañarte hoy?',
       isUser: false,
       timestamp: new Date(),
     };
-    
+
     setMessages([welcomeMessage]);
-    
+
     if (!isGuestMode) {
       createNewConversation();
     }
@@ -167,7 +186,6 @@ export const ChatInterface = ({
         await loadConversations();
       }
     } catch (error) {
-      console.error('Error creating conversation:', error);
       toast({
         title: "Error",
         description: "No se pudo crear la conversación",
@@ -196,7 +214,7 @@ export const ChatInterface = ({
         isUser: true,
         timestamp: new Date(),
       };
-      
+
       setMessages(prev => [...prev, userMessage]);
       setIsTyping(true);
 
@@ -209,7 +227,7 @@ export const ChatInterface = ({
         });
 
         if (messageError) {
-          console.error('Error saving user message:', messageError);
+          // Silent error
         }
       }
 
@@ -220,14 +238,14 @@ export const ChatInterface = ({
       }));
 
       const response = await aiManager.generateResponse(chatHistory, userContext);
-      
+
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: response.message,
         isUser: false,
         timestamp: new Date(),
       };
-      
+
       setMessages(prev => [...prev, aiMessage]);
 
       // Guardar respuesta de IA en BD si tenemos conversación activa y no es modo invitado
@@ -239,7 +257,7 @@ export const ChatInterface = ({
         });
 
         if (aiMessageError) {
-          console.error('Error saving AI message:', aiMessageError);
+          // Silent error
         }
 
         // Actualizar título de conversación si es necesario
@@ -249,25 +267,28 @@ export const ChatInterface = ({
             .from('conversaciones')
             .update({ titulo: title, updated_at: new Date().toISOString() })
             .eq('id', currentConversationId);
-          
+
           if (updateError) {
-            console.error('Error updating conversation title:', updateError);
+            // Silent error
           } else {
             await loadConversations();
           }
         }
       }
 
+      // Reproducir voz si está habilitada (opcional en el futuro una configuración)
+      speakText(response.message);
+
     } catch (error) {
       console.error('Error sending message:', error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: 'Lo siento, ha ocurrido un error al enviar el mensaje. Por favor intenta de nuevo. 🙏',
+        content: 'Lo siento, ha ocurrido un error al enviar el mensaje. Por favor intenta de nuevo.',
         isUser: false,
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, errorMessage]);
-      
+
       toast({
         title: "Error",
         description: "No se pudo enviar el mensaje. Intenta de nuevo.",
@@ -279,6 +300,38 @@ export const ChatInterface = ({
     }
   };
 
+  const speakText = (text: string) => {
+    if ('speechSynthesis' in window) {
+      // Cancelar cualquier audio anterior
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(text);
+
+      const voices = window.speechSynthesis.getVoices();
+
+      // Buscar prioridad: Google Español -> Mexico -> Colombia -> Cualquier Español
+      const spanishVoice = voices.find(voice =>
+        voice.name.includes('Google español') ||
+        voice.lang === 'es-MX' ||
+        voice.lang === 'es-CO' ||
+        (voice.lang.includes('es') && !voice.name.includes('Microsoft')) // Evitar voces robóticas de Microsoft antiguas si es posible
+      ) || voices.find(voice => voice.lang.includes('es'));
+
+      if (spanishVoice) {
+        utterance.voice = spanishVoice;
+        utterance.lang = spanishVoice.lang;
+      } else {
+        utterance.lang = 'es-ES'; // Fallback
+      }
+
+      // Ajustes para sonar más natural
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
   const handleQuickAction = (action: string) => {
     const quickResponses = {
       prayer: "Me gustaría orar contigo",
@@ -286,7 +339,7 @@ export const ChatInterface = ({
       crisis: "Estoy pasando por un momento difícil",
       evangelism: "Quiero conocer más sobre Jesús"
     };
-    
+
     if (quickResponses[action as keyof typeof quickResponses]) {
       handleSendMessage(quickResponses[action as keyof typeof quickResponses]);
     }
@@ -302,9 +355,9 @@ export const ChatInterface = ({
 
   const handleSelectConversation = async (conversationId: string) => {
     if (isGuestMode) return;
-    
+
     setCurrentConversationId(conversationId);
-    
+
     try {
       // Cargar mensajes de la conversación
       const { data, error } = await supabase
@@ -312,9 +365,9 @@ export const ChatInterface = ({
         .select('*')
         .eq('conversacion_id', conversationId)
         .order('created_at', { ascending: true });
-      
+
       if (error) throw error;
-      
+
       if (data) {
         const loadedMessages: Message[] = data.map(msg => ({
           id: msg.id,
@@ -325,7 +378,6 @@ export const ChatInterface = ({
         setMessages(loadedMessages);
       }
     } catch (error) {
-      console.error('Error loading messages:', error);
       toast({
         title: "Error",
         description: "No se pudieron cargar los mensajes",
@@ -339,10 +391,10 @@ export const ChatInterface = ({
       title: "Contactar Líder",
       description: "Redirigiendo a WhatsApp...",
     });
-    
+
     // Aquí puedes personalizar el número y mensaje
     const phoneNumber = "1234567890"; // Reemplazar con el número real
-    const message = encodeURIComponent("Hola, necesito ayuda espiritual desde ChatMJ");
+    const message = encodeURIComponent("Hola, necesito ayuda espiritual desde Verbo IA");
     window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
   };
 
@@ -362,6 +414,41 @@ export const ChatInterface = ({
     );
   }
 
+  const handleDeleteConversation = async (conversationId: string) => {
+    if (isGuestMode) return;
+
+    try {
+      const { error } = await supabase
+        .from('conversaciones')
+        .delete()
+        .eq('id', conversationId);
+
+      if (error) throw error;
+
+      setConversations(prev => prev.filter(c => c.id !== conversationId));
+
+      if (currentConversationId === conversationId) {
+        setCurrentConversationId(undefined);
+        setMessages([]);
+        if (!isGuestMode) {
+          // Optionally create new chat or just leave empty
+        }
+      }
+
+      toast({
+        title: "Conversación eliminada",
+        description: "La conversación se ha eliminado correctamente.",
+      });
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar la conversación.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className={`flex h-screen ${darkMode ? 'dark' : ''}`}>
       <Sidebar
@@ -371,66 +458,84 @@ export const ChatInterface = ({
         conversations={conversations}
         currentConversationId={currentConversationId}
         onSelectConversation={handleSelectConversation}
+        onDeleteConversation={handleDeleteConversation}
         user={user}
         darkMode={darkMode}
         onContactLeader={handleContactLeader}
         onOpenSettings={handleOpenSettings}
         isGuestMode={isGuestMode}
         onExitGuestMode={onExitGuestMode}
+        isAdmin={isAdmin}
       />
-      
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col bg-white dark:bg-gray-900">
-        <ChatHeader 
+      <div className="flex-1 flex flex-col bg-gray-50 dark:bg-gray-900 relative">
+        <ChatHeader
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
           darkMode={darkMode}
           onToggleDarkMode={onToggleDarkMode}
           userName={userContext?.name}
           isGuestMode={isGuestMode}
         />
-        
+
         {/* Messages Container */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.length === 0 && !isTyping && (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <div className="w-16 h-16 mx-auto mb-4 bg-aurora-primario rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-2xl">MJ</span>
+        <div className="flex-1 overflow-y-auto w-full relative">
+          <div className="max-w-3xl mx-auto h-full p-4 pb-32 space-y-6">
+            {messages.length === 0 && !isTyping && (
+              <div className="flex flex-col items-center justify-center h-full opacity-0 animate-fade-in-up">
+                <div className="relative mb-8">
+                  <div className="absolute -inset-1 bg-purple-200 dark:bg-purple-900 rounded-full blur opacity-30 animate-pulse"></div>
+                  <div className="w-24 h-24 relative bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-xl ring-4 ring-white dark:ring-gray-900">
+                    <span className="text-aurora-primario font-bold text-4xl">
+                      V
+                    </span>
+                  </div>
+                  {/* Status dot */}
+                  <div className="absolute bottom-1 right-1 w-6 h-6 bg-green-500 border-4 border-white dark:border-gray-900 rounded-full"></div>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                  ¡Bienvenido a ChatMJ!
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Comienza una conversación o selecciona una de las opciones rápidas
+
+                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3 text-center tracking-tight">
+                  Hola, {userContext?.name || (isGuestMode ? 'Invitado' : 'Amigo')}! 👋
+                </h1>
+
+                <p className="text-lg text-gray-500 dark:text-gray-400 max-w-md text-center leading-relaxed">
+                  Soy <span className="font-semibold text-gray-700 dark:text-gray-300">Verbo IA</span>. Estoy aquí para escucharte, orar contigo y crecer en la fe.
                 </p>
+
                 {isGuestMode && (
-                  <p className="text-sm text-orange-500 dark:text-orange-400 mt-2">
-                    Modo invitado • Las conversaciones no se guardarán
-                  </p>
+                  <div className="mt-8 px-4 py-2 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 text-sm rounded-full font-medium">
+                    ¡Bienvenido a Verbo IA!
+                  </div>
                 )}
               </div>
-            </div>
-          )}
-          
-          {messages.map((message) => (
-            <MessageBubble key={message.id} message={message} />
-          ))}
-          
-          {isTyping && <TypingIndicator />}
-          
-          <div ref={messagesEndRef} />
+            )}
+
+            {messages.map((message) => (
+              <MessageBubble key={message.id} message={message} />
+            ))}
+
+            {isTyping && <TypingIndicator />}
+
+            <div ref={messagesEndRef} />
+          </div>
         </div>
 
-        {/* Quick Actions */}
-        {messages.length === 0 && !isTyping && (
-          <QuickActions onActionClick={handleQuickAction} />
-        )}
-        
-        {/* Message Input */}
-        <MessageInput 
-          onSendMessage={handleSendMessage} 
-          isDisabled={isMessageSending}
-        />
+        {/* Floating Input Area */}
+        <div className="absolute bottom-6 left-0 right-0 z-50 px-4 pointer-events-none">
+          <div className="max-w-3xl mx-auto w-full pointer-events-auto flex flex-col gap-2">
+            {/* Quick Actions */}
+            {messages.length === 0 && !isTyping && (
+              <div className="mb-2 transition-all duration-300 animate-in fade-in slide-in-from-bottom-4">
+                <QuickActions onActionClick={handleQuickAction} />
+              </div>
+            )}
+
+            {/* Input Bar */}
+            <MessageInput
+              onSendMessage={handleSendMessage}
+              isDisabled={isMessageSending}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Settings Modal */}

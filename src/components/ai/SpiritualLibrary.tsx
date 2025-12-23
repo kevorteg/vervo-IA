@@ -7,13 +7,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { 
-  BookOpen, 
-  Mic, 
-  Heart, 
-  Search, 
-  Plus, 
-  Trash2, 
+import {
+  BookOpen,
+  Mic,
+  Heart,
+  Search,
+  Plus,
+  Trash2,
   Calendar,
   Star,
   Tag
@@ -58,31 +58,31 @@ export const SpiritualLibrary = () => {
   const { toast } = useToast();
 
   const contentTypes = [
-    { 
-      id: 'devotionals', 
-      label: '📖 Devocionales', 
-      icon: BookOpen, 
+    {
+      id: 'devotionals',
+      label: '📖 Devocionales',
+      icon: BookOpen,
       description: 'Reflexiones diarias para el alma',
       color: 'bg-blue-500'
     },
-    { 
-      id: 'sermons', 
-      label: '🎤 Sermones', 
-      icon: Mic, 
+    {
+      id: 'sermons',
+      label: '🎤 Sermones',
+      icon: Mic,
       description: 'Mensajes inspiradores y enseñanzas',
       color: 'bg-green-500'
     },
-    { 
-      id: 'studies', 
-      label: '📚 Estudios', 
-      icon: BookOpen, 
+    {
+      id: 'studies',
+      label: '📚 Estudios',
+      icon: BookOpen,
       description: 'Estudios bíblicos profundos',
       color: 'bg-purple-500'
     },
-    { 
-      id: 'prayers', 
-      label: '🙏 Oraciones', 
-      icon: Heart, 
+    {
+      id: 'prayers',
+      label: '🙏 Oraciones',
+      icon: Heart,
       description: 'Oraciones para diferentes situaciones',
       color: 'bg-pink-500'
     }
@@ -219,10 +219,10 @@ export const SpiritualLibrary = () => {
       ...library,
       [type]: library[type as keyof SpiritualLibrary].filter(item => item.id !== id)
     };
-    
+
     setLibrary(updatedLibrary);
     saveLibrary(updatedLibrary);
-    
+
     toast({
       title: "🗑️ Contenido eliminado",
       description: "El contenido se eliminó correctamente",
@@ -236,7 +236,7 @@ export const SpiritualLibrary = () => {
         item.id === id ? { ...item, isFavorite: !item.isFavorite } : item
       )
     };
-    
+
     setLibrary(updatedLibrary);
     saveLibrary(updatedLibrary);
   };
@@ -244,7 +244,7 @@ export const SpiritualLibrary = () => {
   const filteredContent = (type: string) => {
     const content = library[type as keyof SpiritualLibrary];
     if (!searchTerm) return content;
-    
+
     return content.filter(item =>
       item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -255,7 +255,7 @@ export const SpiritualLibrary = () => {
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-aurora-primario to-purple-600 rounded-2xl p-6 text-white">
+      <div className="bg-aurora-primario rounded-2xl p-6 text-white">
         <h2 className="text-3xl font-bold mb-2 flex items-center">
           <BookOpen className="w-8 h-8 mr-3" />
           Biblioteca Espiritual
@@ -263,7 +263,7 @@ export const SpiritualLibrary = () => {
         <p className="text-white/90 mb-4">
           Recursos espirituales para fortalecer tu fe y crecimiento cristiano
         </p>
-        
+
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
           {contentTypes.map(type => (
@@ -288,10 +288,10 @@ export const SpiritualLibrary = () => {
             className="pl-10"
           />
         </div>
-        
-        <Button 
+
+        <Button
           onClick={() => setIsAddingContent(true)}
-          className="bg-aurora-primario hover:bg-orange-600"
+          className="bg-aurora-primario hover:bg-purple-700"
         >
           <Plus className="w-4 h-4 mr-2" />
           Agregar Contenido
@@ -328,7 +328,7 @@ export const SpiritualLibrary = () => {
                 />
               </div>
             </div>
-            
+
             <div>
               <Label htmlFor="category">Categoría</Label>
               <select
@@ -344,7 +344,7 @@ export const SpiritualLibrary = () => {
                 ))}
               </select>
             </div>
-            
+
             <div>
               <Label htmlFor="tags">Etiquetas (separadas por comas)</Label>
               <Input
@@ -354,7 +354,7 @@ export const SpiritualLibrary = () => {
                 placeholder="fe, esperanza, oración, juventud"
               />
             </div>
-            
+
             <div>
               <Label htmlFor="content">Contenido</Label>
               <Textarea
@@ -365,14 +365,14 @@ export const SpiritualLibrary = () => {
                 rows={8}
               />
             </div>
-            
+
             <div className="flex gap-3">
-              <Button onClick={addContent} className="bg-aurora-primario hover:bg-orange-600">
+              <Button onClick={addContent} className="bg-aurora-primario hover:bg-purple-700">
                 <Plus className="w-4 h-4 mr-2" />
                 Agregar
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => setIsAddingContent(false)}
               >
                 Cancelar
@@ -436,7 +436,7 @@ export const SpiritualLibrary = () => {
                       <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3">
                         {item.content.substring(0, 150)}...
                       </p>
-                      
+
                       {item.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1">
                           {item.tags.slice(0, 3).map(tag => (

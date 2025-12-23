@@ -21,8 +21,8 @@ export default {
     extend: {
       colors: {
         'aurora': {
-          'primario': '#F58634',
-          'usuario': '#449BD1', 
+          'primario': '#9E86B0',
+          'usuario': '#449BD1',
           'ia': '#473458',
           'violet': '#8B5CF6',
           'celestial': '#06B6D4',
@@ -34,7 +34,7 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "#F58634",
+          DEFAULT: "#9E86B0",
           foreground: "hsl(var(--primary-foreground))",
         },
         secondary: {
@@ -63,9 +63,9 @@ export default {
         },
       },
       backgroundImage: {
-        'aurora-gradient': 'linear-gradient(135deg, rgba(245, 134, 52, 0.1) 0%, rgba(68, 155, 209, 0.1) 35%, rgba(71, 52, 88, 0.1) 100%)',
-        'message-gradient': 'linear-gradient(135deg, #473458, #5A4270)',
-        'user-gradient': 'linear-gradient(135deg, #449BD1, #5BB4D9)',
+        'aurora-gradient': 'none',
+        'message-gradient': 'none',
+        'user-gradient': 'none',
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -98,5 +98,6 @@ export default {
       },
     },
   },
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   plugins: [require("tailwindcss-animate")],
 } satisfies Config;

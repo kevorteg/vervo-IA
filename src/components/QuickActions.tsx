@@ -32,14 +32,14 @@ export const QuickActions = ({ onActionClick }: QuickActionsProps) => {
       id: 'evangelism',
       label: 'Salvación',
       icon: Cross,
-      color: 'bg-orange-50 text-orange-600 hover:bg-orange-100',
+      color: 'bg-purple-50 text-purple-600 hover:bg-purple-100',
       description: 'Conocer a Jesús'
     }
   ];
 
   return (
-    <div className="px-4 py-3 border-t border-gray-100 bg-gray-50/50">
-      <div className="flex flex-wrap gap-2 justify-center">
+    <div className="w-full overflow-x-auto pb-2 scrollbar-hide">
+      <div className="flex gap-2 min-w-max px-1">
         {actions.map((action) => {
           const IconComponent = action.icon;
           return (
@@ -47,13 +47,14 @@ export const QuickActions = ({ onActionClick }: QuickActionsProps) => {
               key={action.id}
               onClick={() => onActionClick(action.id)}
               className={`
-                flex items-center space-x-2 px-3 py-2 rounded-full text-sm font-medium
-                transition-all duration-200 hover:scale-105 ${action.color}
+                flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium
+                bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700
+                hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-sm
+                transition-all duration-200 whitespace-nowrap text-gray-700 dark:text-gray-200
               `}
             >
-              <IconComponent className="w-4 h-4" />
-              <span className="hidden sm:inline">{action.label}</span>
-              <span className="sm:hidden">{action.description}</span>
+              <IconComponent className={`w-4 h-4 ${action.color.split(' ')[1]}`} />
+              <span>{action.label}</span>
             </button>
           );
         })}

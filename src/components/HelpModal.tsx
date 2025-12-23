@@ -14,7 +14,7 @@ export const HelpModal = ({ isOpen, onClose }: HelpModalProps) => {
   const { toast } = useToast();
 
   const handleContactSupport = () => {
-    const message = encodeURIComponent("Hola, necesito ayuda con ChatMJ");
+    <h3 className="font-medium text-gray-900 dark:text-white">Consejos para usar Verbo IA</h3>
     window.open(`https://wa.me/1234567890?text=${message}`, '_blank');
     toast({
       title: "Redirigiendo a WhatsApp",
@@ -54,7 +54,7 @@ export const HelpModal = ({ isOpen, onClose }: HelpModalProps) => {
             <span>Centro de Ayuda</span>
           </DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-6 py-4">
           {/* Enlaces rápidos */}
           <div className="grid grid-cols-2 gap-4">
@@ -66,7 +66,7 @@ export const HelpModal = ({ isOpen, onClose }: HelpModalProps) => {
               <Phone className="w-6 h-6 text-aurora-primario" />
               <span className="text-sm">Contactar Soporte</span>
             </Button>
-            
+
             <Button
               variant="outline"
               onClick={() => window.open('https://misionjuvenil.org', '_blank')}
@@ -126,7 +126,7 @@ export const HelpModal = ({ isOpen, onClose }: HelpModalProps) => {
           <div className="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
             <Button
               onClick={onClose}
-              className="bg-aurora-primario hover:bg-orange-600 text-white"
+              className="bg-aurora-primario hover:bg-purple-700 text-white"
             >
               Cerrar
             </Button>

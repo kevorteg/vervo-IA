@@ -43,6 +43,7 @@ export const LoginForm = ({ onSuccess, onGuestMode }: LoginFormProps) => {
         if (error) throw error;
         onSuccess();
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       setError(error.message || 'Ha ocurrido un error. Por favor intenta de nuevo.');
     } finally {
@@ -57,7 +58,7 @@ export const LoginForm = ({ onSuccess, onGuestMode }: LoginFormProps) => {
           <span className="text-white font-bold text-xl">MJ</span>
         </div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          {isSignUp ? 'Únete a ChatMJ' : 'Bienvenido a ChatMJ'}
+          {isSignUp ? 'Únete a Verbo IA' : 'Bienvenido a Verbo IA'}
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
           {isSignUp ? 'Crea tu cuenta para continuar' : 'Inicia sesión para continuar'}
@@ -112,12 +113,31 @@ export const LoginForm = ({ onSuccess, onGuestMode }: LoginFormProps) => {
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
+          {isSignUp && (
+            <button
+              type="button"
+              onClick={() => {
+                const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+                const passwordLength = 12;
+                let randomPassword = "";
+                for (let i = 0; i < passwordLength; i++) {
+                  randomPassword += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                setPassword(randomPassword);
+                setShowPassword(true); // Show the generated password so they can copy it
+              }}
+              className="mt-2 text-xs text-aurora-primario hover:underline flex items-center"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-wand-2 mr-1"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z" /><path d="m14 7 3 3" /><path d="M5 6v4" /><path d="M19 14v4" /><path d="M10 2v2" /><path d="M7 8H3" /><path d="M21 16h-4" /><path d="M11 3H9" /></svg>
+              Generar clave segura
+            </button>
+          )}
         </div>
 
         <Button
           type="submit"
           disabled={isLoading}
-          className="w-full h-12 bg-aurora-primario hover:bg-orange-600 text-white font-medium"
+          className="w-full h-12 bg-aurora-primario hover:bg-purple-700 text-white font-medium"
         >
           {isLoading ? 'Cargando...' : (isSignUp ? 'Crear cuenta' : 'Iniciar sesión')}
         </Button>
@@ -136,7 +156,7 @@ export const LoginForm = ({ onSuccess, onGuestMode }: LoginFormProps) => {
       <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
         <Button
           onClick={onGuestMode}
-          className="w-full h-12 bg-gradient-to-r from-aurora-primario to-orange-600 hover:from-orange-600 hover:to-aurora-primario text-white font-medium"
+          className="w-full h-12 bg-aurora-primario hover:bg-purple-700 text-white font-medium"
         >
           <UserX className="w-4 h-4 mr-2" />
           Continuar como invitado

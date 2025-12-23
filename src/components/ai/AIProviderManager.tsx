@@ -20,7 +20,7 @@ export const openAIProvider: AIProvider = {
   name: 'OpenAI',
   generateResponse: async (messages: AIMessage[], userContext?: any): Promise<AIResponse> => {
     // Esta implementación se conectará con OpenAI API
-    const systemPrompt = `Eres ChatMJ, una IA cristiana especializada en contenido de Misión Juvenil. 
+    const systemPrompt = `Eres Verbo IA, una IA cristiana especializada en contenido de Misión Juvenil. 
     Tu estilo es "Aurora Celestial": cristocéntrico, poético, empático, bíblico y evangelístico.
     Siempre respondes con amor, sabiduría bíblica y guía espiritual.
     ${userContext?.name ? `El usuario se llama ${userContext.name}.` : ''}`;
@@ -29,7 +29,7 @@ export const openAIProvider: AIProvider = {
     return new Promise((resolve) => {
       setTimeout(() => {
         const responses = [
-          `¡Hola${userContext?.name ? ` ${userContext.name}` : ''}! Soy ChatMJ, tu compañera espiritual de Misión Juvenil. Estoy aquí para acompañarte en tu caminar con Cristo. ¿En qué puedo ayudarte hoy? 🙏✨`,
+          `¡Hola${userContext?.name ? ` ${userContext.name}` : ''}! Soy Verbo IA, tu compañera espiritual de Misión Juvenil. Estoy aquí para acompañarte en tu caminar con Cristo. ¿En qué puedo ayudarte hoy? 🙏✨`,
           `Querido hermano/a, entiendo tu corazón. En Cristo encontramos la fortaleza para cada desafío. "Todo lo puedo en Cristo que me fortalece" (Filipenses 4:13). ¿Te gustaría que oremos juntos? 💙`,
           `Tu vida tiene un propósito eterno en Cristo. Jesús dice: "Yo he venido para que tengan vida, y para que la tengan en abundancia" (Juan 10:10). ¿Qué te inquieta en tu corazón? 🌟`
         ];
@@ -44,6 +44,7 @@ export const openAIProvider: AIProvider = {
 // DeepSeek Provider
 export const deepSeekProvider: AIProvider = {
   name: 'DeepSeek',
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   generateResponse: async (messages: AIMessage[], userContext?: any): Promise<AIResponse> => {
     // Implementación para DeepSeek API
     return {
@@ -55,6 +56,7 @@ export const deepSeekProvider: AIProvider = {
 // Google WebLM Provider
 export const googleProvider: AIProvider = {
   name: 'Google WebLM',
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   generateResponse: async (messages: AIMessage[], userContext?: any): Promise<AIResponse> => {
     // Implementación para Google WebLM API
     return {
@@ -88,10 +90,12 @@ export class AIProviderManager {
     return this.providers.map(p => p.name);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async generateResponse(messages: AIMessage[], userContext?: any): Promise<AIResponse> {
     try {
       return await this.currentProvider.generateResponse(messages, userContext);
-    } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
       return {
         message: "Lo siento, ha ocurrido un error. Por favor intenta de nuevo.",
         error: error instanceof Error ? error.message : 'Error desconocido'
@@ -100,4 +104,6 @@ export class AIProviderManager {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const aiManager = new AIProviderManager();
+
