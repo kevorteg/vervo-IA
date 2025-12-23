@@ -1,35 +1,94 @@
-# Verbo IA (antes ChatMJ)
+# ✨ Verbo IA - Tu Compañera Espiritual
 
-**Verbo IA** es un asistente espiritual cristocéntrico de **Misión Juvenil**, diseñado para acompañar, evangelizar y discipular. Utiliza IA local (Web-LLM) para garantizar privacidad y rapidez.
+**Verbo IA** (anteriormente ChatMJ) es una plataforma de inteligencia artificial cristiana diseñada para acompañar, evangelizar y discipular a los jóvenes de **Misión Juvenil**. 
 
-## 🚀 Tecnologías
-- **React + Vite**
-- **TailwindCSS**
-- **Supabase** (Auth + BD)
-- **Web-LLM** (IA en navegador)
-
-## 🛠️ Configuración Local
-
-1.  **Instalar dependencias:**
-    ```bash
-    npm install
-    ```
-
-2.  **Configurar variables de entorno (`.env`):**
-    ```env
-    VITE_SUPABASE_URL=tu_url
-    VITE_SUPABASE_ANON_KEY=tu_key
-    ```
-
-3.  **Ejecutar:**
-    ```bash
-    npm run dev
-    ```
-
-## 📚 Características
-- **Modo Invitado:** Acceso inmediato sin login.
-- **Biblioteca Espiritual:** Devocionales, sermones y estudios integrados.
-- **IA Local:** Privacidad total en tus conversaciones.
+A diferencia de otros chatbots, Verbo IA está integrada con una **Biblioteca Espiritual**, un **Diario de Oración** y capacidades de **Voz (TTS/STT)**, todo funcionando con privacidad y rapidez gracias a la tecnología de IA local.
 
 ---
-*Desarrollado con ❤️ para la juventud cristiana.*
+
+## 🚀 Características Principales
+
+### ✝️ Espiritualidad y Discipulado
+- **Conversaciones con Propósito**: Un asistente entrenado para responder desde una cosmovisión bíblica.
+- **Biblioteca Espiritual**: Acceso directo a devocionales, libros y sermones dentro de la app.
+- **Diario de Oración**: Un espacio privado y persistente para escribir tus peticiones y agradecimientos.
+
+### 🤖 Tecnología Avanzada
+- **IA Local (Web-LLM)**: El modelo de inteligencia artificial se ejecuta directamente en tu navegador. Tus conversaciones no viajan a servidores externos de IA.
+- **Modo de Voz**: Habla con Verbo IA y escucha sus respuestas con una voz natural (Text-to-Speech y Speech-to-Text).
+- **Persistencia Inteligente**: Tus chats se guardan en la nube (Supabase) si te registras, o puedes usarlos temporalmente en **Modo Invitado**.
+
+### 🛡️ Administración y Seguridad
+- **Roles de Usuario**: Diferenciación entre usuarios normales, invitados y administradores.
+- **Panel de Control (Admin)**: Interfaz exclusiva para gestionar el entrenamiento de la IA y moderar conversaciones.
+- **Edición de Perfil**: Personaliza tu foto de perfil y gestiona tu cuenta.
+- **Eliminación de Datos**: Control total para borrar tus conversaciones cuando lo desees.
+
+---
+
+## 🛠️ Instalación y Configuración Local
+
+Si deseas correr este proyecto en tu máquina local, sigue estos pasos:
+
+### 1. Prerrequisitos
+- **Node.js** (v18 o superior)
+- **Git**
+
+### 2. Clonar el repositorio
+```bash
+git clone https://github.com/kevorteg/vervo-IA.git
+cd vervo-IA
+```
+
+### 3. Instalar dependencias
+```bash
+npm install
+```
+
+### 4. Configurar variables de entorno
+Crea un archivo `.env` en la raíz del proyecto con tus credenciales de Supabase:
+```env
+VITE_SUPABASE_URL=tu_url_de_supabase
+VITE_SUPABASE_ANON_KEY=tu_anon_key_de_supabase
+```
+
+### 5. Iniciar el servidor de desarrollo
+```bash
+npm run dev
+```
+La aplicación estará disponible en `http://localhost:8080`.
+
+---
+
+## � Gestión de Administradores
+
+Para habilitar las funciones de administrador (Panel de Control, Entrenamiento), debes asignar el rol en la base de datos de Supabase.
+
+1. Ve a tu proyecto en Supabase > **SQL Editor**.
+2. Ejecuta el siguiente comando, reemplazando el email:
+   ```sql
+   UPDATE public.perfiles
+   SET rol = 'admin'
+   WHERE id = (SELECT id FROM auth.users WHERE email = 'usuario@ejemplo.com');
+   ```
+3. Recarga la aplicación. Verás la etiqueta **Admin** en tu perfil y nuevas opciones en el menú lateral.
+
+---
+
+## 📂 Estructura del Proyecto
+
+- `/src/components`: Componentes reutilizables (Chat, Sidebar, Auth).
+- `/src/components/admin`: Panel de administración.
+- `/src/components/ai`: Lógica de IA (Web-LLM) y gestión de entrenamiento.
+- `/src/pages`: Rutas principales de la aplicación.
+- `/src/integrations/supabase`: Cliente y configuración de base de datos.
+
+---
+
+## 🤝 Contribución
+
+¡Las contribuciones son bienvenidas! Por favor, abre un "Issue" o envía un "Pull Request" si deseas mejorar Verbo IA.
+
+---
+
+*Desarrollado con ❤️ para la gloria de Dios y la juventud cristiana.*

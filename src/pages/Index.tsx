@@ -23,7 +23,7 @@ const Index = () => {
   useEffect(() => {
     const checkUserRole = async (uid: string) => {
       try {
-        console.log('Checking role for uid:', uid);
+        console.log('Verificando rol para uid:', uid);
         const { data, error } = await (supabase as any)
           .from('perfiles')
           .select('rol')
@@ -31,28 +31,28 @@ const Index = () => {
           .single();
 
         if (error) {
-          console.error('Error fetching role:', error);
-          // DEBUG: Show error to user
-          // toast({ title: "Debug: Error checking role", description: error.message, variant: "destructive" });
+          console.error('Error al obtener rol:', error);
+          // DEBUG: Mostrar error al usuario
+          // toast({ title: "Debug: Error al verificar rol", description: error.message, variant: "destructive" });
         }
 
         if (data && data.rol === 'admin') {
-          console.log('User is admin');
+          console.log('Usuario es admin');
           setIsAdmin(true);
-          // toast({ title: "Modo Administrador Activo", description: "Se han habilitado las funciones de gestión.", duration: 3000 });
+          // toast({ title: "Modo Administrador Activo", description: "Funciones de gestión habilitadas.", duration: 3000 });
         } else {
-          console.log('User is NOT admin', data);
+          console.log('Usuario NO es admin', data);
           setIsAdmin(false);
-          // DEBUG: Explain why
+          // DEBUG: Explicar por qué
           // toast({ title: "Debug: No eres admin", description: `Rol encontrado: ${data?.rol || 'ninguno'}` });
         }
       } catch (error) {
-        console.warn('Error checking role:', error);
+        console.warn('Error al verificar rol:', error);
         setIsAdmin(false);
       }
     };
 
-    // Listen for auth changes first
+    // Escuchar cambios de autenticación primero
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
@@ -66,7 +66,7 @@ const Index = () => {
       }
     );
 
-    // Then get initial session
+    // Obtener sesión inicial
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setLoading(false);
@@ -150,6 +150,7 @@ const Index = () => {
   }
 
   // Mostrar ChatInterface si hay sesión O está en modo invitado
+
   return (
     <div className="min-h-screen">
       <ChatInterface
