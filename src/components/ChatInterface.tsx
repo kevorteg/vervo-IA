@@ -194,8 +194,21 @@ export const ChatInterface = ({
     }
   };
 
+  const [guestMessageCount, setGuestMessageCount] = useState(0);
+
   const handleSendMessage = async (content: string) => {
     if (!userContext || isMessageSending) return;
+
+    // Check Guest Limit
+    if (isGuestMode && guestMessageCount >= 5) {
+      toast({
+        title: "Límite de invitados alcanzado",
+        description: "Has alcanzado el límite de 5 mensajes. ¡Regístrate gratis para continuar y guardar tus conversaciones!",
+        variant: "destructive", // Or a custom "info" variant if we had one, but destructive grabs attention
+      });
+      setShowSettings(true); // Open settings to show "Exit Guest Mode" button
+      return;
+    }
 
     setIsMessageSending(true);
 
@@ -205,6 +218,8 @@ export const ChatInterface = ({
         await createNewConversation();
         // Esperar un momento para que se cree la conversación
         await new Promise(resolve => setTimeout(resolve, 100));
+      } else if (isGuestMode) {
+        setGuestMessageCount(prev => prev + 1);
       }
 
       // Agregar mensaje del usuario inmediatamente
@@ -277,7 +292,7 @@ export const ChatInterface = ({
       }
 
       // Reproducir voz si está habilitada (opcional en el futuro una configuración)
-      speakText(response.message);
+      // speakText(response.message); // Disabled by user request
 
     } catch (error) {
       console.error('Error sending message:', error);
@@ -418,6 +433,29 @@ export const ChatInterface = ({
     if (isGuestMode) return;
 
     try {
+      // 0. Delete related alerts first
+      const { error: alertsError } = await supabase
+        .from('alertas')
+        .delete()
+        .eq('conversacion_id', conversationId);
+
+      if (alertsError) {
+        console.error('Error deleting alerts:', alertsError);
+        // Continue, as alerts might not exist
+      }
+
+      // 1. Delete all messages (to handle FK constraints)
+      const { error: messagesError } = await supabase
+        .from('mensajes')
+        .delete()
+        .eq('conversacion_id', conversationId);
+
+      if (messagesError) {
+        console.error('Error deleting messages:', messagesError);
+        throw messagesError;
+      }
+
+      // 2. Delete the conversation
       const { error } = await supabase
         .from('conversaciones')
         .delete()
@@ -430,9 +468,6 @@ export const ChatInterface = ({
       if (currentConversationId === conversationId) {
         setCurrentConversationId(undefined);
         setMessages([]);
-        if (!isGuestMode) {
-          // Optionally create new chat or just leave empty
-        }
       }
 
       toast({
@@ -443,7 +478,7 @@ export const ChatInterface = ({
       console.error('Error deleting conversation:', error);
       toast({
         title: "Error",
-        description: "No se pudo eliminar la conversación.",
+        description: "No se pudo eliminar la conversación. Intenta de nuevo.",
         variant: "destructive",
       });
     }

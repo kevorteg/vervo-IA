@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { SpiritualLibrary } from "./components/ai/SpiritualLibrary";
@@ -24,11 +24,7 @@ const App = () => (
           <Route path="/biblioteca" element={<SpiritualLibrary />} />
           <Route
             path="/entrenamiento"
-            element={
-              <ProtectedRoute requireAdmin={true}>
-                <TrainingDataManager />
-              </ProtectedRoute>
-            }
+            element={<Navigate to="/admin" replace />}
           />
           <Route path="/diario" element={<PrayerJournal />} />
           <Route

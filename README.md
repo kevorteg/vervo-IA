@@ -92,3 +92,22 @@ Para habilitar las funciones de administrador (Panel de Control, Entrenamiento),
 ---
 
 *Desarrollado con ❤️ para la gloria de Dios y la juventud cristiana.*
+
+---
+
+## 🔄 Actualización Reciente (v2.0) - Diciembre 2025
+
+### 🧠 Nuevo Sistema de Entrenamiento
+- **Editor JSON Masivo**: Nueva herramienta en el panel admin para cargar cientos de preguntas/respuestas simultáneamente con pegado directo.
+- **Formato Estándar**: Soporta formato `[{"pregunta": "...", "respuesta": "..."}]` para fácil integración.
+- **Base de Conocimiento Instantánea**: Los datos cargados se usan inmediatamente sin re-entrenamiento lento.
+
+### ⚡ Motor de IA Mejorado (RAG Lite)
+- **Búsqueda Estricta (Strict-RAG)**: El bot ahora detecta si la pregunta del usuario coincide con el material de entrenamiento y **prioriza** esa respuesta sobre la generación creativa.
+- **Funcionamiento Offline**: Incluso si el "cerebro" pesado (Web-LLM) no ha cargado, el bot responde instantáneamente usando la base de datos JSON local.
+- **Corrección de "Modo Demo"**: Se eliminó un proveedor simulado que daba respuestas genéricas; ahora el chat está conectado 100% al motor real.
+
+### 🎨 Mejoras de Interfaz (UI/UX)
+- **Modo Silencioso**: Se eliminó la voz automática (Text-to-Speech) a petición de los usuarios para una experiencia más fluida y menos robótica.
+- **Estilo Admin Renovado**: Pestañas de colores vibrantes para mejor visibilidad y editor de código estilo "Matrix" (`bg-slate-900` + `text-emerald-400`).
+- **Feedback Visual**: Mejores alertas y notificaciones al cargar datos.

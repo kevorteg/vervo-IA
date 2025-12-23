@@ -1,5 +1,6 @@
 
 import { MLCEngine } from "@mlc-ai/web-llm";
+import { supabase } from '@/integrations/supabase/client';
 
 interface UserContext {
   name?: string;
@@ -45,20 +46,24 @@ export class WebLLMManager {
   private isInitialized = false;
   private trainingData: ChatMessage[] = [];
   private engine: MLCEngine | null = null;
-  private currentModel: string = 'Llama-3.2-1B-Instruct-q4f16_1-MLC';
+  private currentModel: string = 'Phi-3.5-mini-instruct-q4f16_1-MLC';
   private loadingState = false;
 
   constructor() {
     this.loadTrainingData();
   }
 
-  // Cargar datos de entrenamiento locales específicos para ChatMJ
-  private async loadTrainingData() {
+  // Cargar datos de entrenamiento locales y remotos (Supabase)
+  public async loadTrainingData() {
     try {
-      this.trainingData = [
-        {
-          role: "system",
-          content: `Eres Verbo IA, un asistente espiritual cristiano de Misión Juvenil creado con Aurora Celestial. 
+      // 1. Cargar System Prompt Personalizado
+      const { data: sysPromptData } = await supabase
+        .from('entrenamiento')
+        .select('respuesta')
+        .eq('categoria', 'config_sys_prompt')
+        .maybeSingle();
+
+      let systemContent = `Eres Verbo IA, un asistente espiritual cristiano de Misión Juvenil creado con Aurora Celestial. 
           Tus características principales:
           - Eres amable, comprensiva y llena de amor cristiano
           - Hablas con estilo poético y empático, usando emojis apropiados
@@ -69,8 +74,19 @@ export class WebLLMManager {
           - Siempre terminas con emojis apropiados y mensajes de esperanza
           - Usas un lenguaje juvenil pero respetuoso
           - Incluyes citas bíblicas cuando es apropiado
-          - Tienes acceso a una biblioteca espiritual con devocionales, sermones y estudios bíblicos`
+          - Tienes acceso a una biblioteca espiritual con devocionales, sermones y estudios bíblicos`;
+
+      if (sysPromptData && sysPromptData.respuesta) {
+        console.log('✨ Personalidad personalizada cargada');
+        systemContent = sysPromptData.respuesta;
+      }
+
+      this.trainingData = [
+        {
+          role: "system",
+          content: systemContent
         },
+        // Ejemplos base
         {
           role: "user",
           content: "¿Cómo puedo fortalecer mi fe?"
@@ -78,26 +94,28 @@ export class WebLLMManager {
         {
           role: "assistant",
           content: "¡Hermosa pregunta! 💫 La fe se fortalece de varias maneras preciosas: 1) Leyendo la Palabra de Dios diariamente 📖 - como dice en Romanos 10:17 'la fe viene por el oír, y el oír por la palabra de Dios', 2) Orando constantemente 🙏 - manteniendo esa conexión íntima con Papá Dios, 3) Congregándote con otros creyentes 👥 - el hierro se afila con hierro, 4) Sirviendo a los demás con amor ❤️ - cuando das, recibes bendición, y 5) Recordando las promesas de Dios en tu vida ✨. Recuerda que Él tiene planes de bien para ti (Jeremías 29:11). ¡Dios está contigo siempre, mi querido/a! 🌟"
-        },
-        {
-          role: "user",
-          content: "Estoy muy triste y no sé qué hacer"
-        },
-        {
-          role: "assistant",
-          content: "Mi corazón se conmueve por lo que estás pasando 💙. Quiero que sepas que no estás solo/a - Jesús prometió: 'No te desampararé, ni te dejaré' (Hebreos 13:5). Él conoce cada lágrima y cada dolor de tu corazón 😢. En estos momentos difíciles, recuerda que 'weeping may endure for a night, but joy comes in the morning' - el llanto puede durar toda la noche, pero la alegría viene por la mañana (Salmo 30:5) 🌅. ¿Te gustaría que oremos juntos por esta situación? También puedo sugerirte algunos versículos de consuelo que han ayudado a muchos jóvenes como tú. Dios tiene un propósito hermoso para tu vida, incluso en medio del dolor 🕊️✨"
-        },
-        {
-          role: "user",
-          content: "¿Tienes algún devocional para hoy?"
-        },
-        {
-          role: "assistant",
-          content: "¡Por supuesto! 📖✨ Hoy te comparto una reflexión hermosa basada en Filipenses 4:19: 'Mi Dios, pues, suplirá todo lo que os falta conforme a sus riquezas en gloria en Cristo Jesús' 💎\n\n🌟 **Reflexión del día:** Dios conoce cada una de tus necesidades antes de que las expreses. Él no solo suple lo básico, sino que derrama abundancia según Sus riquezas infinitas. Hoy, descansa en Su provisión perfecta.\n\n🙏 **Oración:** 'Padre celestial, gracias porque eres mi proveedor fiel. Ayúdame a confiar en tu timing perfecto y a reconocer tus bendiciones cada día. En el nombre de Jesús, amén.'\n\n💫 **Desafío:** Haz una lista de 3 bendiciones que Dios te ha dado esta semana. ¡Él está obrando siempre! 🌈"
         }
       ];
 
-      // Cargar datos adicionales del localStorage si existen
+      // 2. Cargar datos de entrenamiento desde Supabase (Excluyendo config)
+      const { data: supabaseData, error } = await supabase
+        .from('entrenamiento')
+        .select('pregunta, respuesta')
+        .neq('categoria', 'config_sys_prompt') // Excluir prompt del sistema
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching Supabase training data:', error);
+      } else if (supabaseData && supabaseData.length > 0) {
+        console.log(`🧠 Cargando ${supabaseData.length} entradas de entrenamiento desde Supabase`);
+        const remoteMessages = supabaseData.flatMap(entry => [
+          { role: 'user' as const, content: entry.pregunta },
+          { role: 'assistant' as const, content: entry.respuesta }
+        ]);
+        this.trainingData.push(...remoteMessages);
+      }
+
+      // 2. Cargar datos del localStorage (Legacy/Dev)
       const customData = localStorage.getItem('chatmj_training_data');
       if (customData) {
         const parsed = JSON.parse(customData);
@@ -110,7 +128,7 @@ export class WebLLMManager {
         }
       }
 
-      // Cargar biblioteca espiritual
+      // 3. Cargar biblioteca espiritual
       const libraryData = localStorage.getItem('chatmj_spiritual_library');
       if (libraryData) {
         const library = JSON.parse(libraryData);
@@ -206,9 +224,66 @@ export class WebLLMManager {
       if (this.isInitialized && this.engine) {
         // Usar Web-LLM si está disponible
         const systemMessages = this.trainingData.filter(msg => msg.role === 'system');
-        const fullMessages = [...systemMessages, ...messages];
 
-        console.log(`🤖 Generando respuesta con ${this.currentModel}...`);
+        // --- INICIO LÓGICA RAG ---
+        const lastUserMessage = messages[messages.length - 1].content.toLowerCase();
+        let bestMatch = null;
+        let maxOverlap = 0;
+
+        const trainingPairs = [];
+        for (let i = 0; i < this.trainingData.length; i++) {
+          if (this.trainingData[i].role === 'user' && this.trainingData[i + 1]?.role === 'assistant') {
+            trainingPairs.push({
+              q: this.trainingData[i].content.toLowerCase(),
+              a: this.trainingData[i + 1].content
+            });
+          }
+        }
+
+        // Buscar la mejor coincidencia
+        for (const pair of trainingPairs) {
+          const words = pair.q.split(' ').filter(w => w.length > 3);
+          let overlap = 0;
+          for (const word of words) {
+            if (lastUserMessage.includes(word)) overlap++;
+          }
+
+          // Si coincide > 50% de las palabras clave O coincidencia exacta de frase
+          if ((overlap > 0 && overlap >= words.length * 0.5) || lastUserMessage.includes(pair.q) || pair.q.includes(lastUserMessage)) {
+            if (overlap > maxOverlap) {
+              maxOverlap = overlap;
+              bestMatch = pair;
+            }
+            // Si es coincidencia muy fuerte, nos quedamos con esta
+            if (pair.q.includes(lastUserMessage) || lastUserMessage.includes(pair.q)) {
+              bestMatch = pair;
+              break;
+            }
+          }
+        }
+
+        if (bestMatch) {
+          console.log(`💡 RAG Match: "${bestMatch.q}"`);
+          const contextInstruction = `\n\n[INSTRUCCIÓN ESTRICTA]: El usuario pregunta sobre "${bestMatch.q}". \nTU RESPUESTA DEBE BASARSE EN ESTA INFORMACIÓN VERIFICADA: "${bestMatch.a}". \nPuedes adaptar el tono pero el CONTENIDO debe ser este.`;
+
+          if (systemMessages.length > 0) {
+            systemMessages[systemMessages.length - 1].content += contextInstruction;
+          } else {
+            systemMessages.push({ role: 'system', content: contextInstruction });
+          }
+        }
+        // --- FIN LÓGICA RAG ---
+
+        // Filter training examples (user/assistant files)
+        // Cap at last 20 examples to prevent context overflow
+        const trainingExamples = this.trainingData
+          .filter(msg => msg.role !== 'system')
+          .slice(-20);
+
+        const fullMessages = [...systemMessages, ...trainingExamples, ...messages];
+
+        console.log(`🤖 Generando con ${this.currentModel}...`);
+        console.log(`📚 Contexto: ${systemMessages.length} sys + ${trainingExamples.length} ejemplos + ${messages.length} historial`);
 
         const response = await this.engine.chat.completions.create({
           messages: fullMessages,
@@ -235,15 +310,47 @@ export class WebLLMManager {
     }
   }
 
-  // Sistema de respuestas por patrones mejorado como fallback
+  // Sistema de respuestas por patrones mejorado como fallback (y ahora leector de JSON)
   private generatePatternResponse(messages: ChatMessage[], userContext: UserContext): AIResponse {
     const lastMessage = messages[messages.length - 1];
     const userMessage = lastMessage.content?.toLowerCase() || '';
     const userName = userContext.name ? userContext.name : '';
 
+    // 1. BÚSQUEDA DIRECTA EN DATOS DE ENTRENAMIENTO (RAG LITE)
+    // Esto permite que el bot responda con el JSON incluso si el motor AI está apagado.
+    for (let i = 0; i < this.trainingData.length; i++) {
+      if (this.trainingData[i].role === 'user' && this.trainingData[i + 1]?.role === 'assistant') {
+        const q = this.trainingData[i].content.toLowerCase();
+        const a = this.trainingData[i + 1].content;
+
+        // Coincidencia exacta o muy cercana
+        if (userMessage.includes(q) || q.includes(userMessage)) {
+          console.log(`💡 Pattern Match (JSON): "${q}"`);
+          return {
+            message: a,
+            model: "ChatMJ-RAG-Lite"
+          };
+        }
+
+        // Coincidencia por palabras clave (Fuzzy)
+        const words = q.split(' ').filter(w => w.length > 3);
+        let overlap = 0;
+        for (const word of words) {
+          if (userMessage.includes(word)) overlap++;
+        }
+        if (overlap >= words.length * 0.6) { // 60% de coincidencia
+          console.log(`💡 Pattern Match Fuzzy (JSON): "${q}"`);
+          return {
+            message: a,
+            model: "ChatMJ-RAG-Lite"
+          };
+        }
+      }
+    }
+
     let response = "";
 
-    // Patrones específicos para biblioteca espiritual
+    // Patrones específicos para biblioteca espiritual backup
     if (userMessage.includes('devocional') || userMessage.includes('lectura diaria')) {
       response = `${userName ? userName + ', ' : ''}¡qué hermoso que busques un devocional! 📖✨ Te comparto una reflexión basada en Salmo 119:105: "Lámpara es a mis pies tu palabra, y lumbrera a mi camino" 🕯️\n\n🌟 **Reflexión:** La Palabra de Dios ilumina cada paso que damos. En la oscuridad de la incertidumbre, Sus promesas son nuestra guía segura.\n\n🙏 **Oración:** "Señor, que tu Palabra sea la luz que guíe mis decisiones hoy. Ayúdame a caminar en tu verdad. Amén."\n\n¿Te gustaría un estudio bíblico específico o tienes algún tema en particular? 💫`;
     } else if (userMessage.includes('biblioteca') || userMessage.includes('recursos') || userMessage.includes('estudio')) {
@@ -279,6 +386,59 @@ export class WebLLMManager {
       // Si Web-LLM está inicializado, no necesita reiniciar - los datos se usan en el próximo chat
     } catch (error) {
       console.error('Error loading custom training data:', error);
+    }
+  }
+
+  // Importar JSON masivo (Lógica movida desde la UI)
+  async importJSONData(jsonText: string): Promise<{ success: boolean; count: number; message?: string }> {
+    try {
+      if (!jsonText.trim()) return { success: false, count: 0, message: "El texto está vacío." };
+
+      let parsed;
+      try {
+        parsed = JSON.parse(jsonText);
+      } catch (e) {
+        return { success: false, count: 0, message: "Sintaxis JSON inválida." };
+      }
+
+      let dataToProcess = [];
+
+      if (Array.isArray(parsed)) {
+        dataToProcess = parsed;
+      } else if (parsed.data && Array.isArray(parsed.data)) {
+        dataToProcess = parsed.data;
+      } else {
+        dataToProcess = [parsed];
+      }
+
+      const validData = dataToProcess.filter((item: any) =>
+        (item.question || item.pregunta || item.usuario) && (item.answer || item.respuesta)
+      ).map((item: any) => ({
+        pregunta: item.question || item.pregunta || item.usuario,
+        respuesta: item.answer || item.respuesta,
+        categoria: item.category || item.categoria || 'general'
+      }));
+
+      if (validData.length === 0) {
+        return { success: false, count: 0, message: "No se encontraron entradas válidas (requiere [question|pregunta|usuario] y [answer|respuesta])." };
+      }
+
+      // Guardar en Supabase
+      const { error } = await supabase.from('entrenamiento').insert(validData);
+
+      if (error) {
+        console.error("Supabase Error:", error);
+        return { success: false, count: 0, message: error.message };
+      }
+
+      // Recargar datos en memoria
+      await this.loadTrainingData();
+
+      return { success: true, count: validData.length };
+
+    } catch (error) {
+      console.error('Error in importJSONData:', error);
+      return { success: false, count: 0, message: "Error desconocido al procesar." };
     }
   }
 

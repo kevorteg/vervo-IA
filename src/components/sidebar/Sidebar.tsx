@@ -254,11 +254,24 @@ export const Sidebar = ({
 
           <Button
             variant="ghost"
-            onClick={() => navigate('/diario')}
+            onClick={() => {
+              if (isGuestMode) {
+                toast({
+                  title: "Función exclusiva",
+                  description: "El Diario de Oración es para usuarios registrados.",
+                  variant: "default",
+                });
+                return;
+              }
+              navigate('/diario');
+            }}
             className="w-full justify-start space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
           >
-            <Book className="w-4 h-4" />
-            <span>Diario de Oración</span>
+            {isGuestMode ? <div className="relative">
+              <Book className="w-4 h-4 opacity-50" />
+              <div className="absolute -top-1 -right-1 w-2 h-2 bg-purple-500 rounded-full" />
+            </div> : <Book className="w-4 h-4" />}
+            <span className={isGuestMode ? "text-gray-400" : ""}>Diario de Oración {isGuestMode && "(Bloqueado)"}</span>
           </Button>
 
           <Button
@@ -276,14 +289,7 @@ export const Sidebar = ({
               <p className="px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
                 Administración
               </p>
-              <Button
-                variant="ghost"
-                onClick={() => navigate('/entrenamiento')}
-                className="w-full justify-start space-x-2 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20"
-              >
-                <Database className="w-4 h-4" />
-                <span>Entrenamiento IA</span>
-              </Button>
+
               <Button
                 variant="ghost"
                 onClick={() => navigate('/admin')}

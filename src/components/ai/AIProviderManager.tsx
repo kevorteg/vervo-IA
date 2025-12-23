@@ -1,12 +1,14 @@
+import { webLLMManager } from './WebLLMManager';
 
 interface AIMessage {
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'system';
   content: string;
 }
 
 interface AIResponse {
   message: string;
   error?: string;
+  model?: string;
 }
 
 export interface AIProvider {
@@ -15,55 +17,15 @@ export interface AIProvider {
   generateResponse: (messages: AIMessage[], userContext?: any) => Promise<AIResponse>;
 }
 
-// OpenAI Provider
-export const openAIProvider: AIProvider = {
-  name: 'OpenAI',
+// 1. Web Local LLM Provider (Primary)
+export const localWebLLMProvider: AIProvider = {
+  name: 'Local Web-LLM',
   generateResponse: async (messages: AIMessage[], userContext?: any): Promise<AIResponse> => {
-    // Esta implementación se conectará con OpenAI API
-    const systemPrompt = `Eres Verbo IA, una IA cristiana especializada en contenido de Misión Juvenil. 
-    Tu estilo es "Aurora Celestial": cristocéntrico, poético, empático, bíblico y evangelístico.
-    Siempre respondes con amor, sabiduría bíblica y guía espiritual.
-    ${userContext?.name ? `El usuario se llama ${userContext.name}.` : ''}`;
-
-    // Simulación de respuesta por ahora
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const responses = [
-          `¡Hola${userContext?.name ? ` ${userContext.name}` : ''}! Soy Verbo IA, tu compañera espiritual de Misión Juvenil. Estoy aquí para acompañarte en tu caminar con Cristo. ¿En qué puedo ayudarte hoy? 🙏✨`,
-          `Querido hermano/a, entiendo tu corazón. En Cristo encontramos la fortaleza para cada desafío. "Todo lo puedo en Cristo que me fortalece" (Filipenses 4:13). ¿Te gustaría que oremos juntos? 💙`,
-          `Tu vida tiene un propósito eterno en Cristo. Jesús dice: "Yo he venido para que tengan vida, y para que la tengan en abundancia" (Juan 10:10). ¿Qué te inquieta en tu corazón? 🌟`
-        ];
-        resolve({
-          message: responses[Math.floor(Math.random() * responses.length)]
-        });
-      }, 2000);
-    });
+    return await webLLMManager.generateResponse(messages as any, userContext);
   }
 };
 
-// DeepSeek Provider
-export const deepSeekProvider: AIProvider = {
-  name: 'DeepSeek',
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  generateResponse: async (messages: AIMessage[], userContext?: any): Promise<AIResponse> => {
-    // Implementación para DeepSeek API
-    return {
-      message: "Respuesta desde DeepSeek (implementar API real)"
-    };
-  }
-};
-
-// Google WebLM Provider
-export const googleProvider: AIProvider = {
-  name: 'Google WebLM',
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  generateResponse: async (messages: AIMessage[], userContext?: any): Promise<AIResponse> => {
-    // Implementación para Google WebLM API
-    return {
-      message: "Respuesta desde Google WebLM (implementar API real)"
-    };
-  }
-};
+// ... (Keep other providers as fallbacks/options)
 
 // AI Provider Manager
 export class AIProviderManager {
@@ -71,8 +33,8 @@ export class AIProviderManager {
   private providers: AIProvider[];
 
   constructor() {
-    this.providers = [openAIProvider, deepSeekProvider, googleProvider];
-    this.currentProvider = openAIProvider; // Default provider
+    this.providers = [localWebLLMProvider]; // Set WebLLM as the main provider
+    this.currentProvider = localWebLLMProvider; // Default to WebLLM
   }
 
   setProvider(providerName: string) {

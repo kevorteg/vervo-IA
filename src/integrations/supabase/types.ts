@@ -309,6 +309,38 @@ export type Database = {
         }
         Relationships: []
       }
+      perfiles: {
+        Row: {
+          id: string
+          rol: string | null
+          created_at: string
+          email: string | null
+          avatar_url: string | null
+        }
+        Insert: {
+          id: string
+          rol?: string | null
+          created_at?: string
+          email?: string | null
+          avatar_url?: string | null
+        }
+        Update: {
+          id?: string
+          rol?: string | null
+          created_at?: string
+          email?: string | null
+          avatar_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "perfiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
