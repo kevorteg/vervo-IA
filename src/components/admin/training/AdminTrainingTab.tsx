@@ -17,6 +17,8 @@ interface TrainingEntry {
     question: string;
     answer: string;
     category: string;
+    libro?: string;
+    version?: string;
 }
 
 interface InitProgress {
@@ -52,6 +54,7 @@ export const AdminTrainingTab = () => {
         { value: 'crisis', label: '💙 Crisis', desc: 'Apoyo emocional' },
         { value: 'evangelismo', label: '🌍 Evangelismo', desc: 'Compartir' },
         { value: 'biblia', label: '📚 Biblia', desc: 'Estudios' },
+        { value: 'nuevo_testamento', label: '📜 Nuevo Testamento', desc: 'Libros NT' },
         { value: 'juventud', label: '🎯 Juventud', desc: 'Temas jóvenes' }
     ];
 
@@ -100,11 +103,13 @@ export const AdminTrainingTab = () => {
             if (error) throw error;
 
             if (data) {
-                const formattedData: TrainingEntry[] = data.map(item => ({
+                const formattedData: TrainingEntry[] = data.map((item: any) => ({
                     id: item.id,
                     question: item.pregunta,
                     answer: item.respuesta,
-                    category: item.categoria || 'general'
+                    category: item.categoria || 'general',
+                    libro: item.libro,
+                    version: item.version
                 }));
                 setTrainingData(formattedData);
                 webLLMManager.loadCustomTrainingData(formattedData);
@@ -156,15 +161,70 @@ export const AdminTrainingTab = () => {
         }
     };
 
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editForm, setEditForm] = useState({ question: '', answer: '' });
+
     const loadInbox = async () => {
+        // Fetch ALL recent messages to find pairs
         const { data } = await supabase
             .from('mensajes')
             .select('*')
-            .eq('es_usuario', true)
-            .order('created_at', { ascending: false })
-            .limit(50);
+            .order('created_at', { ascending: true }) // Oldest first to easier pairing
+            .limit(200);
 
-        if (data) setInboxMessages(data);
+        if (data && data.length > 0) {
+            const pairs = [];
+
+            // Simple logic: If we find a user message, look at the NEXT message.
+            // If the next message is NOT user and same conversation -> It's the reply.
+            for (let i = 0; i < data.length; i++) {
+                const msg = data[i];
+                if (msg.es_usuario) {
+                    let reply = null;
+                    // Look ahead
+                    if (i + 1 < data.length) {
+                        const nextMsg = data[i + 1];
+                        if (!nextMsg.es_usuario && nextMsg.conversacion_id === msg.conversacion_id) {
+                            reply = nextMsg;
+                        }
+                    }
+                    pairs.unshift({ user: msg, bot: reply }); // Add to start (newest first)
+                }
+            }
+            setInboxMessages(pairs);
+        }
+    };
+
+    const startEditing = (pair: any) => {
+        setEditingId(pair.user.id);
+        setEditForm({
+            question: pair.user.contenido,
+            answer: pair.bot ? pair.bot.contenido : ''
+        });
+    };
+
+    const saveTrainingFromInbox = async () => {
+        if (!editForm.question.trim() || !editForm.answer.trim()) return;
+
+        try {
+            const { error } = await supabase.from('entrenamiento').insert({
+                pregunta: editForm.question,
+                respuesta: editForm.answer,
+                categoria: 'general'
+            });
+
+            if (error) throw error;
+
+            toast({ title: "Entrenado", description: "Nueva entrada creada desde buzón." });
+
+            // Remove from list visually
+            setInboxMessages(prev => prev.filter(p => p.user.id !== editingId));
+
+            setEditingId(null);
+            loadExistingData();
+        } catch (e) {
+            toast({ title: "Error", description: "Fallo al guardar.", variant: "destructive" });
+        }
     };
 
     const promoteToTraining = (msgContent: string) => {
@@ -295,6 +355,40 @@ export const AdminTrainingTab = () => {
         link.download = `entrenamiento_chatmj.json`;
         link.click();
         URL.revokeObjectURL(url);
+    };
+
+    const removeDuplicates = async () => {
+        if (!confirm("¿Estás seguro? Esto eliminará las preguntas repetidas dejando solo la más reciente.")) return;
+
+        const unique = new Map();
+        const duplicates: string[] = [];
+
+        // Detectar duplicados (trainingData ya viene ordenado por fecha de creación ascendente)
+        for (const entry of trainingData) {
+            const key = entry.question.toLowerCase().trim();
+            if (unique.has(key)) {
+                // Si ya existe, marcamos el ANTERIOR para borrar (así nos quedamos con la versión más reciente)
+                duplicates.push(unique.get(key).id);
+                unique.set(key, entry);
+            } else {
+                unique.set(key, entry);
+            }
+        }
+
+        if (duplicates.length === 0) {
+            toast({ title: "Impecable", description: "No tienes preguntas duplicadas." });
+            return;
+        }
+
+        try {
+            const { error } = await supabase.from('entrenamiento').delete().in('id', duplicates);
+            if (error) throw error;
+
+            toast({ title: "Limpieza Exitosa", description: `Se eliminaron ${duplicates.length} entradas repetidas.` });
+            loadExistingData();
+        } catch (e) {
+            toast({ title: "Error", description: "No se pudieron borrar los duplicados.", variant: "destructive" });
+        }
     };
 
     return (
@@ -477,12 +571,24 @@ export const AdminTrainingTab = () => {
                         <div className="lg:col-span-2">
                             <Card className="bg-[#1a1c23] border-[#2d2f39] text-white h-full flex flex-col">
                                 <CardHeader>
-                                    <CardTitle className="flex items-center">
-                                        <Database className="w-5 h-5 mr-2 text-purple-400" /> Base de Conocimiento
-                                    </CardTitle>
-                                    <CardDescription className="text-gray-400">
-                                        {trainingData.length} entradas registradas
-                                    </CardDescription>
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <CardTitle className="flex items-center">
+                                                <Database className="w-5 h-5 mr-2 text-purple-400" /> Base de Conocimiento
+                                            </CardTitle>
+                                            <CardDescription className="text-gray-400">
+                                                {trainingData.length} entradas registradas
+                                            </CardDescription>
+                                        </div>
+                                        <Button
+                                            onClick={removeDuplicates}
+                                            variant="outline"
+                                            size="sm"
+                                            className="border-red-500/50 text-red-400 hover:bg-red-900/20 hover:text-red-300"
+                                        >
+                                            <Trash2 className="w-4 h-4 mr-2" /> Limpiar Duplicados
+                                        </Button>
+                                    </div>
                                 </CardHeader>
                                 <CardContent className="flex-1 overflow-auto max-h-[800px] p-0">
                                     <div className="divide-y divide-[#2d2f39]">
@@ -492,9 +598,13 @@ export const AdminTrainingTab = () => {
                                             trainingData.map(entry => (
                                                 <div key={entry.id} className="p-4 hover:bg-[#2d2f39]/50 transition-colors">
                                                     <div className="flex justify-between items-start mb-2">
-                                                        <Badge className="bg-purple-900/50 text-purple-300 border-purple-700 hover:bg-purple-900">
-                                                            {categories.find(c => c.value === entry.category)?.label || entry.category}
-                                                        </Badge>
+                                                        <div className="flex gap-2 flex-wrap">
+                                                            <Badge className="bg-purple-900/50 text-purple-300 border-purple-700 hover:bg-purple-900">
+                                                                {categories.find(c => c.value === entry.category)?.label || entry.category}
+                                                            </Badge>
+                                                            {entry.libro && <Badge variant="outline" className="text-blue-300 border-blue-500/30">{entry.libro}</Badge>}
+                                                            {entry.version && <Badge variant="outline" className="text-yellow-300 border-yellow-500/30 text-[10px]">{entry.version}</Badge>}
+                                                        </div>
                                                         <Button variant="ghost" size="sm" onClick={() => removeEntry(entry.id)} className="text-gray-500 hover:text-red-400 hover:bg-red-900/20 h-6 w-6 p-0">
                                                             <Trash2 className="w-3 h-3" />
                                                         </Button>
@@ -535,21 +645,62 @@ export const AdminTrainingTab = () => {
                                         No hay mensajes recientes de usuarios.
                                     </div>
                                 ) : (
-                                    inboxMessages.map(msg => (
-                                        <div key={msg.id} className="p-4 border border-[#2d2f39] rounded-lg bg-[#0f1115] hover:border-purple-500/50 transition-colors">
-                                            <div className="flex justify-between items-start">
-                                                <p className="text-gray-200 font-medium">{msg.contenido}</p>
-                                                <Button
-                                                    size="sm"
-                                                    onClick={() => promoteToTraining(msg.contenido)}
-                                                    className="bg-green-600 hover:bg-green-700 text-white ml-4"
-                                                >
-                                                    <Brain className="w-4 h-4 mr-2" /> Entrenar
-                                                </Button>
-                                            </div>
-                                            <div className="mt-2 text-xs text-gray-500">
-                                                {new Date(msg.created_at).toLocaleString()}
-                                            </div>
+                                    inboxMessages.map(pair => (
+                                        <div key={pair.user.id} className="p-4 border border-[#2d2f39] rounded-lg bg-[#0f1115] hover:border-purple-500/50 transition-colors">
+                                            {editingId === pair.user.id ? (
+                                                <div className="space-y-3 bg-[#1a1c23] p-4 rounded-md border border-emerald-500/50 animate-in fade-in zoom-in-95">
+                                                    <div>
+                                                        <Label className="text-xs text-emerald-400">Pregunta del Usuario</Label>
+                                                        <Input
+                                                            value={editForm.question}
+                                                            onChange={e => setEditForm({ ...editForm, question: e.target.value })}
+                                                            className="bg-[#0f1115] border-emerald-500/30 text-white"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <Label className="text-xs text-emerald-400">Respuesta Correcta (Lo que debió decir)</Label>
+                                                        <Textarea
+                                                            value={editForm.answer}
+                                                            onChange={e => setEditForm({ ...editForm, answer: e.target.value })}
+                                                            className="bg-[#0f1115] border-emerald-500/30 text-white min-h-[100px]"
+                                                        />
+                                                    </div>
+                                                    <div className="flex justify-end gap-2">
+                                                        <Button variant="ghost" size="sm" onClick={() => setEditingId(null)} className="text-gray-400 hover:text-white">Cancelar</Button>
+                                                        <Button size="sm" onClick={saveTrainingFromInbox} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                                                            <Save className="w-3 h-3 mr-2" /> Guardar Aprendizaje
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <div className="space-y-1 w-full mr-4">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <span className="text-xs font-bold text-blue-400">USUARIO</span>
+                                                                <span className="text-[10px] text-gray-600">{new Date(pair.user.created_at).toLocaleString()}</span>
+                                                            </div>
+                                                            <p className="text-gray-200 text-sm">{pair.user.contenido}</p>
+                                                        </div>
+                                                        <Button
+                                                            size="sm"
+                                                            onClick={() => startEditing(pair)}
+                                                            className="bg-purple-600 hover:bg-purple-700 text-white shrink-0"
+                                                        >
+                                                            <Brain className="w-4 h-4 mr-2" /> Entrenar
+                                                        </Button>
+                                                    </div>
+
+                                                    {pair.bot && (
+                                                        <div className="ml-8 mt-2 space-y-1 bg-[#2d2f39]/30 p-2 rounded border-l-2 border-yellow-500/30">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <span className="text-xs font-bold text-yellow-500/70">AURORA (IA)</span>
+                                                            </div>
+                                                            <p className="text-gray-400 text-sm italic">{pair.bot.contenido}</p>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            )}
                                         </div>
                                     ))
                                 )}
@@ -581,7 +732,7 @@ export const AdminTrainingTab = () => {
                         </CardContent>
                     </Card>
                 </TabsContent>
-            </Tabs>
-        </div>
+            </Tabs >
+        </div >
     );
 };

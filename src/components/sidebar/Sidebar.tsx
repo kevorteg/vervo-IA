@@ -245,10 +245,19 @@ export const Sidebar = ({
 
           <Button
             variant="ghost"
-            onClick={() => navigate('/biblioteca')}
+            onClick={() => navigate('/biblia')}
             className="w-full justify-start space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
           >
             <Book className="w-4 h-4" />
+            <span>Santa Biblia</span>
+          </Button>
+
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/biblioteca')}
+            className="w-full justify-start space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            <Database className="w-4 h-4" />
             <span>Biblioteca Espiritual</span>
           </Button>
 

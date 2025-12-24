@@ -6,6 +6,7 @@ import { MessageBubble } from './MessageBubble';
 import { MessageInput } from './MessageInput';
 import { TypingIndicator } from './TypingIndicator';
 import { QuickActions } from './QuickActions';
+import { DailyVerse } from './bible/DailyVerse';
 import { Sidebar } from './sidebar/Sidebar';
 import { UserOnboarding } from './UserOnboarding';
 import { aiManager } from './ai/AIProviderManager';
@@ -550,6 +551,7 @@ export const ChatInterface = ({
 
             {isTyping && <TypingIndicator />}
 
+            <div className="h-32" />
             <div ref={messagesEndRef} />
           </div>
         </div>
@@ -561,6 +563,9 @@ export const ChatInterface = ({
             {messages.length === 0 && !isTyping && (
               <div className="mb-2 transition-all duration-300 animate-in fade-in slide-in-from-bottom-4">
                 <QuickActions onActionClick={handleQuickAction} />
+                <div className="mt-4 px-2">
+                  <DailyVerse />
+                </div>
               </div>
             )}
 

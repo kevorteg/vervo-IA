@@ -11,7 +11,13 @@ A diferencia de otros chatbots, Verbo IA está integrada con una **Biblioteca Es
 ### ✝️ Espiritualidad y Discipulado
 - **Conversaciones con Propósito**: Un asistente entrenado para responder desde una cosmovisión bíblica.
 - **Biblioteca Espiritual**: Acceso directo a devocionales, libros y sermones dentro de la app.
-- **Diario de Oración**: Un espacio privado y persistente para escribir tus peticiones y agradecimientos.
+- **Diario de Oración (Privado)**: Un espacio privado y persistente para escribir tus peticiones y agradecimientos.
+
+### 📖 Biblia Integrada & Inteligente (Nuevo v2.5)
+- **Lector Bíblico**: Sección `/biblia` para leer las escrituras (Reina Valera 1909) con diseño limpio.
+- **Búsqueda Inteligente**: La IA detecta cuando citas un versículo (ej: "Juan 3:16") y **busca el texto real** vía API para responderte con precisión absoluta (RAG).
+- **Auto-Corrección**: No importa si escribes "Salmo" o "Salmos", el sistema te entiende.
+- **Versículo del Día**: Una promesa diaria para inspirarte cada vez que entras.
 
 ### 🤖 Tecnología Avanzada
 - **IA Local (Web-LLM)**: El modelo de inteligencia artificial se ejecuta directamente en tu navegador. Tus conversaciones no viajan a servidores externos de IA.
@@ -20,7 +26,10 @@ A diferencia de otros chatbots, Verbo IA está integrada con una **Biblioteca Es
 
 ### 🛡️ Administración y Seguridad
 - **Roles de Usuario**: Diferenciación entre usuarios normales, invitados y administradores.
-- **Panel de Control (Admin)**: Interfaz exclusiva para gestionar el entrenamiento de la IA y moderar conversaciones.
+- **Panel de Control (Admin)**: 
+    - Entrena a la IA con nuevos datos JSON o editando conversaciones reales.
+    - Gestiona usuarios.
+    - Edita la "Personalidad" del bot.
 - **Edición de Perfil**: Personaliza tu foto de perfil y gestiona tu cuenta.
 - **Eliminación de Datos**: Control total para borrar tus conversaciones cuando lo desees.
 
@@ -60,7 +69,7 @@ La aplicación estará disponible en `http://localhost:8080`.
 
 ---
 
-## � Gestión de Administradores
+## 👑 Gestión de Administradores
 
 Para habilitar las funciones de administrador (Panel de Control, Entrenamiento), debes asignar el rol en la base de datos de Supabase.
 
@@ -79,8 +88,10 @@ Para habilitar las funciones de administrador (Panel de Control, Entrenamiento),
 
 - `/src/components`: Componentes reutilizables (Chat, Sidebar, Auth).
 - `/src/components/admin`: Panel de administración.
+- `/src/components/bible`: Lector bíblico y servicios.
 - `/src/components/ai`: Lógica de IA (Web-LLM) y gestión de entrenamiento.
 - `/src/pages`: Rutas principales de la aplicación.
+- `/src/services`: Servicios externos (API.Bible).
 - `/src/integrations/supabase`: Cliente y configuración de base de datos.
 
 ---
@@ -92,22 +103,3 @@ Para habilitar las funciones de administrador (Panel de Control, Entrenamiento),
 ---
 
 *Desarrollado con ❤️ para la gloria de Dios y la juventud cristiana.*
-
----
-
-## 🔄 Actualización Reciente (v2.0) - Diciembre 2025
-
-### 🧠 Nuevo Sistema de Entrenamiento
-- **Editor JSON Masivo**: Nueva herramienta en el panel admin para cargar cientos de preguntas/respuestas simultáneamente con pegado directo.
-- **Formato Estándar**: Soporta formato `[{"pregunta": "...", "respuesta": "..."}]` para fácil integración.
-- **Base de Conocimiento Instantánea**: Los datos cargados se usan inmediatamente sin re-entrenamiento lento.
-
-### ⚡ Motor de IA Mejorado (RAG Lite)
-- **Búsqueda Estricta (Strict-RAG)**: El bot ahora detecta si la pregunta del usuario coincide con el material de entrenamiento y **prioriza** esa respuesta sobre la generación creativa.
-- **Funcionamiento Offline**: Incluso si el "cerebro" pesado (Web-LLM) no ha cargado, el bot responde instantáneamente usando la base de datos JSON local.
-- **Corrección de "Modo Demo"**: Se eliminó un proveedor simulado que daba respuestas genéricas; ahora el chat está conectado 100% al motor real.
-
-### 🎨 Mejoras de Interfaz (UI/UX)
-- **Modo Silencioso**: Se eliminó la voz automática (Text-to-Speech) a petición de los usuarios para una experiencia más fluida y menos robótica.
-- **Estilo Admin Renovado**: Pestañas de colores vibrantes para mejor visibilidad y editor de código estilo "Matrix" (`bg-slate-900` + `text-emerald-400`).
-- **Feedback Visual**: Mejores alertas y notificaciones al cargar datos.

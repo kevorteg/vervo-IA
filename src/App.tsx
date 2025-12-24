@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import BibleReader from "./pages/BibleReader";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { SpiritualLibrary } from "./components/ai/SpiritualLibrary";
@@ -21,6 +22,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/biblia" element={<BibleReader />} />
           <Route path="/biblioteca" element={<SpiritualLibrary />} />
           <Route
             path="/entrenamiento"

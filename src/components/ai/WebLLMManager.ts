@@ -1,6 +1,7 @@
 
 import { MLCEngine } from "@mlc-ai/web-llm";
 import { supabase } from '@/integrations/supabase/client';
+import { BibleService } from '@/services/BibleService';
 
 interface UserContext {
   name?: string;
@@ -18,6 +19,17 @@ interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
 }
+
+const STATIC_KNOWLEDGE_BASE = [
+  // UNICIDAD
+  { q: "¿Dios es uno o tres?", a: "Dios es absoluta e indivisiblemente UNO. Deuteronomio 6:4 es claro: 'Jehová nuestro Dios, Jehová uno es'. No hay tres personas, sino un único Dios manifestado como Padre en la creación, Hijo en la redención y Espíritu Santo en la regeneración." },
+  { q: "unicidad de dios", a: "La Unicidad enseña que Dios es uno solo, sin divisiones. Jesús es ese Dios único manifestado en carne (1 Timoteo 3:16). No es una 'segunda persona', es el Padre mismo habitando entre nosotros." },
+  { q: "¿Por qué bautizarse en el nombre de Jesús?", a: "Porque es el único nombre para salvación (Hechos 4:12). Pedro ordenó en Hechos 2:38 bautizarse 'en el nombre de Jesucristo'. El mandato de Mateo 28:19 se cumple invocando el NOMBRE del Padre, Hijo y Espíritu Santo, que es Jesús." },
+  // MISION JUVENIL
+  { q: "¿Qué es Misión Juvenil?", a: "Somos jóvenes, líderes y profesionales cristianos comprometidos con llevar el mensaje de Jesucristo a colegios, universidades y entornos digitales. No somos un evento, somos una familia y una voz profética en el aula." },
+  { q: "Historia de Misión Juvenil", a: "Comenzó en 2004 en la Univalle bajo un árbol de mango con 5 jóvenes. Luego se llamó 'Grace' y finalmente evolucionó a 'Misión Juvenil', expandiéndose a todo el distrito." },
+  { q: "Misión Juvenil a un Click", a: "Es nuestro lema actual: llevar el evangelio más allá de los muros físicos, hasta cada pantalla, aula y corazón, usando la tecnología como puente." }
+];
 
 // Modelos disponibles con sus configuraciones
 export const AVAILABLE_MODELS = {
@@ -127,8 +139,16 @@ export class WebLLMManager {
           this.trainingData.push(...additionalMessages);
         }
       }
+      // 3. Inyectar Base de Conocimiento Estática (Hardcoded Fallback)
+      // Esto asegura que temas críticos (Unicidad, MJ) funcionen incluso sin internet/base de datos
+      const staticMessages = STATIC_KNOWLEDGE_BASE.flatMap(entry => [
+        { role: 'user' as const, content: entry.q },
+        { role: 'assistant' as const, content: entry.a }
+      ]);
+      this.trainingData.push(...staticMessages);
+      console.log(`📚 Inyectadas ${STATIC_KNOWLEDGE_BASE.length} entradas de conocimiento estático.`);
 
-      // 3. Cargar biblioteca espiritual
+      // 4. Cargar biblioteca espiritual
       const libraryData = localStorage.getItem('chatmj_spiritual_library');
       if (libraryData) {
         const library = JSON.parse(libraryData);
@@ -226,7 +246,31 @@ export class WebLLMManager {
         const systemMessages = this.trainingData.filter(msg => msg.role === 'system');
 
         // --- INICIO LÓGICA RAG ---
-        const lastUserMessage = messages[messages.length - 1].content.toLowerCase();
+        const lastUserMessageRaw = messages[messages.length - 1].content;
+
+        // 0. Integración BIBLIA (API.Bible)
+        // Detectar si el usuario pide un versículo específico (ej: "Juan 3:16")
+        if (lastUserMessageRaw.length < 100 && /\b[1-3]?\s?[A-Za-zñáéíóú]+\s+\d+[:\.]\d+\b/i.test(lastUserMessageRaw)) {
+          try {
+            console.log("📖 Detectando posible cita bíblica...");
+            const searchResults = await BibleService.search(lastUserMessageRaw);
+            // El servicio devuelve data.data. Asumimos que tiene 'verses'.
+            if (searchResults && searchResults.verses && searchResults.verses.length > 0) {
+              const topVerse = searchResults.verses[0];
+              const bibleContext = `\n[CONTEXTO BÍBLICO AUTOMÁTICO]\nFuente: API.Bible (RVR1909)\nCita: ${topVerse.reference}\nTexto: "${topVerse.text}"\n\nINSTRUCCIÓN: El usuario ha citado este versículo. Usa el Texto provisto para explicarlo o confirmarlo.`;
+
+              console.log("✅ Contexto bíblico inyectado:", topVerse.reference);
+              systemMessages.push({
+                role: 'system',
+                content: bibleContext
+              });
+            }
+          } catch (e) {
+            console.error("⚠️ Error consultando Biblia:", e);
+          }
+        }
+
+        const lastUserMessage = lastUserMessageRaw.toLowerCase();
         let bestMatch = null;
         let maxOverlap = 0;
 
@@ -416,15 +460,32 @@ export class WebLLMManager {
       ).map((item: any) => ({
         pregunta: item.question || item.pregunta || item.usuario,
         respuesta: item.answer || item.respuesta,
-        categoria: item.category || item.categoria || 'general'
+        categoria: item.category || item.categoria || 'general',
+        libro: item.libro || item.book || null,
+        version: item.version || null
       }));
 
       if (validData.length === 0) {
         return { success: false, count: 0, message: "No se encontraron entradas válidas (requiere [question|pregunta|usuario] y [answer|respuesta])." };
       }
 
-      // Guardar en Supabase
-      const { error } = await supabase.from('entrenamiento').insert(validData);
+      // Verificar duplicados
+      const { data: existingData } = await supabase
+        .from('entrenamiento')
+        .select('pregunta');
+
+      const existingQuestions = new Set(existingData?.map(e => e.pregunta.toLowerCase().trim()) || []);
+
+      const uniqueData = validData.filter(item =>
+        !existingQuestions.has(item.pregunta.toLowerCase().trim())
+      );
+
+      if (uniqueData.length === 0) {
+        return { success: true, count: 0, message: "Todas las entradas ya existían en la base de datos (0 duplicados importados)." };
+      }
+
+      // Guardar en Supabase solo las únicas
+      const { error } = await supabase.from('entrenamiento').insert(uniqueData);
 
       if (error) {
         console.error("Supabase Error:", error);
@@ -434,7 +495,12 @@ export class WebLLMManager {
       // Recargar datos en memoria
       await this.loadTrainingData();
 
-      return { success: true, count: validData.length };
+      const skipped = validData.length - uniqueData.length;
+      return {
+        success: true,
+        count: uniqueData.length,
+        message: `Importadas ${uniqueData.length} nuevas entradas.${skipped > 0 ? ` (Se omitieron ${skipped} duplicadas)` : ''}`
+      };
 
     } catch (error) {
       console.error('Error in importJSONData:', error);
