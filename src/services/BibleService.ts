@@ -44,41 +44,41 @@ export class BibleService {
         }
     }
 
-    // Obtener todos los libros
-    static async getBooks(): Promise<BibleBook[]> {
-        const data = await this.fetchAPI(`/bibles/${BIBLE_ID}/books`);
+    // Obtener todos los libros (Bible ID can be passed, otherwise default)
+    static async getBooks(bibleId: string = BIBLE_ID): Promise<BibleBook[]> {
+        const data = await this.fetchAPI(`/bibles/${bibleId}/books`);
         return data.data;
     }
 
     // Obtener capítulos de un libro
-    static async getChapters(bookId: string): Promise<BibleChapter[]> {
-        const data = await this.fetchAPI(`/bibles/${BIBLE_ID}/books/${bookId}/chapters`);
+    static async getChapters(bookId: string, bibleId: string = BIBLE_ID): Promise<BibleChapter[]> {
+        const data = await this.fetchAPI(`/bibles/${bibleId}/books/${bookId}/chapters`);
         return data.data.filter((c: any) => c.number !== 'intro'); // Filtrar introducciones
     }
 
     // Obtener texto de un capítulo
-    static async getChapterContent(chapterId: string): Promise<string> {
-        const data = await this.fetchAPI(`/bibles/${BIBLE_ID}/chapters/${chapterId}?content-type=html&include-notes=false&include-titles=true&include-chapter-numbers=false&include-verse-numbers=true`);
+    static async getChapterContent(chapterId: string, bibleId: string = BIBLE_ID): Promise<string> {
+        const data = await this.fetchAPI(`/bibles/${bibleId}/chapters/${chapterId}?content-type=html&include-notes=false&include-titles=true&include-chapter-numbers=false&include-verse-numbers=true`);
         return data.data.content;
     }
 
     // Buscar versículo específico (para RAG)
     // chapterId formato: "JHN.3"
-    static async getVerse(verseId: string): Promise<string> {
+    static async getVerse(verseId: string, bibleId: string = BIBLE_ID): Promise<string> {
         // verseId ex: JHN.3.16
-        const data = await this.fetchAPI(`/bibles/${BIBLE_ID}/verses/${verseId}?content-type=text&include-verse-numbers=false`);
+        const data = await this.fetchAPI(`/bibles/${bibleId}/verses/${verseId}?content-type=text&include-verse-numbers=false`);
         return data.data.content;
     }
 
     // Búsqueda simple
-    static async search(query: string) {
+    static async search(query: string, bibleId: string = BIBLE_ID) {
         // Normalización de nombres comunes en español
         let cleanQuery = query
             .replace(/\bSalmo\b/gi, 'Salmos')     // Salmo -> Salmos
             .replace(/\bApoc\b/gi, 'Apocalipsis') // Abreviatura común
             .replace(/\bMat\b/gi, 'Mateo');       // Abreviatura común
 
-        const data = await this.fetchAPI(`/bibles/${BIBLE_ID}/search?query=${encodeURIComponent(cleanQuery)}`);
+        const data = await this.fetchAPI(`/bibles/${bibleId}/search?query=${encodeURIComponent(cleanQuery)}`);
         return data.data;
     }
 }

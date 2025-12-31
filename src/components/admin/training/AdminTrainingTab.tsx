@@ -5,12 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, Plus, Trash2, Save, FileText, Brain, Zap, Database, Settings, Download, X, MessageSquare, Sparkles, FileJson } from 'lucide-react';
+import { Plus, Trash2, Save, Database, Download, MessageSquare, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { webLLMManager, AVAILABLE_MODELS } from '@/components/ai/WebLLMManager';
 
 interface TrainingEntry {
     id: string;
@@ -21,11 +19,6 @@ interface TrainingEntry {
     version?: string;
 }
 
-interface InitProgress {
-    text: string;
-    progress: number;
-}
-
 export const AdminTrainingTab = () => {
     const [trainingData, setTrainingData] = useState<TrainingEntry[]>([]);
     const [newEntry, setNewEntry] = useState({
@@ -33,16 +26,11 @@ export const AdminTrainingTab = () => {
         answer: '',
         category: 'general'
     });
-    const [isLoading, setIsLoading] = useState(false);
-    const [stats, setStats] = useState<any>({});
-    const [initProgress, setInitProgress] = useState<InitProgress>({ text: '', progress: 0 });
-    const [selectedModel, setSelectedModel] = useState('Phi-3.5-mini-instruct-q4f16_1-MLC');
-
-    // Advanced Features State
     const [systemPrompt, setSystemPrompt] = useState('');
     const [inboxMessages, setInboxMessages] = useState<any[]>([]);
-    const [jsonInput, setJsonInput] = useState('');
     const [activeTab, setActiveTab] = useState("knowledge");
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editForm, setEditForm] = useState({ question: '', answer: '' });
 
     const { toast } = useToast();
 
@@ -62,35 +50,7 @@ export const AdminTrainingTab = () => {
         loadExistingData();
         loadSystemPrompt();
         loadInbox();
-        updateStats();
-        const savedModel = localStorage.getItem('chatmj_selected_model');
-        if (savedModel && AVAILABLE_MODELS[savedModel as keyof typeof AVAILABLE_MODELS]) {
-            setSelectedModel(savedModel);
-            webLLMManager.setModel(savedModel);
-        }
     }, []);
-
-    const processJsonInput = async () => {
-        setIsLoading(true);
-        toast({ title: "Procesando...", description: "Analizando contenido..." });
-
-        try {
-            // Updated to use the requested importJSONData method from WebLLMManager
-            const result = await webLLMManager.importJSONData(jsonInput);
-
-            if (result.success) {
-                toast({ title: "Éxito", description: `Se importaron ${result.count} entradas correctamente.` });
-                setJsonInput('');
-                await loadExistingData(); // Refresh UI
-            } else {
-                toast({ title: "Error", description: result.message, variant: "destructive" });
-            }
-        } catch (err) {
-            toast({ title: "Error Crítico", description: "Fallo inesperado al procesar JSON.", variant: "destructive" });
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
     const loadExistingData = async () => {
         try {
@@ -112,7 +72,6 @@ export const AdminTrainingTab = () => {
                     version: item.version
                 }));
                 setTrainingData(formattedData);
-                webLLMManager.loadCustomTrainingData(formattedData);
             }
         } catch (error) {
             console.error('Error loading training data:', error);
@@ -154,41 +113,32 @@ export const AdminTrainingTab = () => {
             if (error) throw error;
 
             toast({ title: "Guardado", description: "Personalidad del bot actualizada." });
-            webLLMManager.loadTrainingData();
 
         } catch (error) {
             toast({ title: "Error", description: "No se pudo guardar la personalidad.", variant: "destructive" });
         }
     };
 
-    const [editingId, setEditingId] = useState<string | null>(null);
-    const [editForm, setEditForm] = useState({ question: '', answer: '' });
-
     const loadInbox = async () => {
-        // Fetch ALL recent messages to find pairs
         const { data } = await supabase
             .from('mensajes')
             .select('*')
-            .order('created_at', { ascending: true }) // Oldest first to easier pairing
+            .order('created_at', { ascending: true })
             .limit(200);
 
         if (data && data.length > 0) {
             const pairs = [];
-
-            // Simple logic: If we find a user message, look at the NEXT message.
-            // If the next message is NOT user and same conversation -> It's the reply.
             for (let i = 0; i < data.length; i++) {
                 const msg = data[i];
                 if (msg.es_usuario) {
                     let reply = null;
-                    // Look ahead
                     if (i + 1 < data.length) {
                         const nextMsg = data[i + 1];
                         if (!nextMsg.es_usuario && nextMsg.conversacion_id === msg.conversacion_id) {
                             reply = nextMsg;
                         }
                     }
-                    pairs.unshift({ user: msg, bot: reply }); // Add to start (newest first)
+                    pairs.unshift({ user: msg, bot: reply });
                 }
             }
             setInboxMessages(pairs);
@@ -216,37 +166,12 @@ export const AdminTrainingTab = () => {
             if (error) throw error;
 
             toast({ title: "Entrenado", description: "Nueva entrada creada desde buzón." });
-
-            // Remove from list visually
             setInboxMessages(prev => prev.filter(p => p.user.id !== editingId));
-
             setEditingId(null);
             loadExistingData();
         } catch (e) {
             toast({ title: "Error", description: "Fallo al guardar.", variant: "destructive" });
         }
-    };
-
-    const promoteToTraining = (msgContent: string) => {
-        setNewEntry({
-            ...newEntry,
-            question: msgContent,
-            answer: ''
-        });
-        setActiveTab("knowledge");
-        toast({ title: "Importado", description: "Completa la respuesta para entrenar al bot." });
-    };
-
-    const updateStats = () => {
-        const webLLMStats = webLLMManager.getTrainingStats();
-        setStats(webLLMStats);
-    };
-
-    const handleModelChange = (modelId: string) => {
-        setSelectedModel(modelId);
-        webLLMManager.setModel(modelId);
-        localStorage.setItem('chatmj_selected_model', modelId);
-        toast({ title: "Modelo seleccionado", description: AVAILABLE_MODELS[modelId as keyof typeof AVAILABLE_MODELS].name });
     };
 
     const addTrainingEntry = async () => {
@@ -278,7 +203,6 @@ export const AdminTrainingTab = () => {
             const updatedData = [...trainingData, entry];
             setTrainingData(updatedData);
             setNewEntry({ ...newEntry, question: '', answer: '' });
-            webLLMManager.loadCustomTrainingData(updatedData);
             toast({ title: "Agregado", description: "Entrada guardada correctamente." });
 
         } catch (error) {
@@ -293,52 +217,10 @@ export const AdminTrainingTab = () => {
 
             const updatedData = trainingData.filter(entry => entry.id !== id);
             setTrainingData(updatedData);
-            webLLMManager.loadCustomTrainingData(updatedData);
             toast({ title: "Eliminado", description: "Entrada borrada." });
         } catch (error) {
             toast({ title: "Error", description: "Falló al eliminar.", variant: "destructive" });
         }
-    };
-
-    const initializeWebLLM = async () => {
-        setIsLoading(true);
-        setInitProgress({ text: 'Iniciando...', progress: 0 });
-        try {
-            const success = await webLLMManager.initialize((progress) => setInitProgress(progress));
-            updateStats();
-            if (success) toast({ title: "Web-LLM Listo", description: "Modelo cargado en memoria." });
-            else toast({ title: "Fallback", description: "Web-LLM no disponible.", variant: "destructive" });
-        } catch (error) {
-            toast({ title: "Error", description: "Fallo al iniciar Web-LLM", variant: "destructive" });
-        } finally {
-            setIsLoading(false);
-            setInitProgress({ text: '', progress: 0 });
-        }
-    };
-
-    const loadFromFile = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            try {
-                const content = e.target?.result as string;
-                // Reuse importJSONData logic simply by calling it
-                const result = await webLLMManager.importJSONData(content);
-                if (result.success) {
-                    toast({ title: "Éxito", description: `Importadas ${result.count} entradas desde archivo.` });
-                    await loadExistingData();
-                } else {
-                    toast({ title: "Error de Archivo", description: result.message, variant: "destructive" });
-                }
-            } catch (error) {
-                console.error('Import error:', error);
-                toast({ title: "Error", description: "Error al leer archivo.", variant: "destructive" });
-            } finally {
-                if (event.target) event.target.value = '';
-            }
-        };
-        reader.readAsText(file);
     };
 
     const exportData = () => {
@@ -363,11 +245,9 @@ export const AdminTrainingTab = () => {
         const unique = new Map();
         const duplicates: string[] = [];
 
-        // Detectar duplicados (trainingData ya viene ordenado por fecha de creación ascendente)
         for (const entry of trainingData) {
             const key = entry.question.toLowerCase().trim();
             if (unique.has(key)) {
-                // Si ya existe, marcamos el ANTERIOR para borrar (así nos quedamos con la versión más reciente)
                 duplicates.push(unique.get(key).id);
                 unique.set(key, entry);
             } else {
@@ -394,122 +274,38 @@ export const AdminTrainingTab = () => {
     return (
         <div className="space-y-6">
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card className="bg-[#1a1c23] border-[#2d2f39] text-white">
                     <CardContent className="p-4 flex flex-col items-center justify-center">
                         <div className="text-2xl font-bold text-purple-400">{trainingData.length}</div>
-                        <div className="text-xs text-gray-400 uppercase tracking-wider">Entradas</div>
+                        <div className="text-xs text-gray-400 uppercase tracking-wider">Entradas de Entrenamiento</div>
                     </CardContent>
                 </Card>
                 <Card className="bg-[#1a1c23] border-[#2d2f39] text-white">
                     <CardContent className="p-4 flex flex-col items-center justify-center">
-                        <div className="text-2xl font-bold text-blue-400">{stats.totalMessages || 0}</div>
-                        <div className="text-xs text-gray-400 uppercase tracking-wider">Tokens/Msgs</div>
-                    </CardContent>
-                </Card>
-                <Card className="bg-[#1a1c23] border-[#2d2f39] text-white">
-                    <CardContent className="p-4 flex flex-col items-center justify-center">
-                        <div className="text-2xl font-bold text-green-400">{stats.isInitialized ? 'ACTIVO' : 'INACTIVO'}</div>
-                        <div className="text-xs text-gray-400 uppercase tracking-wider">Motor IA</div>
-                    </CardContent>
-                </Card>
-                <Card className="bg-[#1a1c23] border-[#2d2f39] text-white">
-                    <CardContent className="p-4 flex flex-col items-center justify-center">
-                        <div className="text-lg font-bold text-yellow-400 truncate w-full text-center">{selectedModel.split('-')[0]}</div>
-                        <div className="text-xs text-gray-400 uppercase tracking-wider">Modelo</div>
+                        <div className="text-2xl font-bold text-blue-400">{inboxMessages.length}</div>
+                        <div className="text-xs text-gray-400 uppercase tracking-wider">Mensajes en Buzón</div>
                     </CardContent>
                 </Card>
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-4 bg-[#1a1c23] border border-[#2d2f39]">
+                <TabsList className="grid w-full grid-cols-3 bg-[#1a1c23] border border-[#2d2f39]">
                     <TabsTrigger value="knowledge" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-gray-400 hover:text-white transition-colors">
                         <Database className="w-4 h-4 mr-2" /> Base de Conocimiento
-                    </TabsTrigger>
-                    <TabsTrigger value="json_editor" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-gray-400 hover:text-white transition-colors">
-                        <FileJson className="w-4 h-4 mr-2" /> Editor JSON
                     </TabsTrigger>
                     <TabsTrigger value="inbox" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-gray-400 hover:text-white transition-colors">
                         <MessageSquare className="w-4 h-4 mr-2" /> Buzón de Aprendizaje
                     </TabsTrigger>
                     <TabsTrigger value="personality" className="data-[state=active]:bg-pink-600 data-[state=active]:text-white text-gray-400 hover:text-white transition-colors">
-                        <Sparkles className="w-4 h-4 mr-2" /> Personalidad (Alma)
+                        <Sparkles className="w-4 h-4 mr-2" /> Personalidad
                     </TabsTrigger>
                 </TabsList>
-
-                {/* TAB: JSON EDITOR */}
-                <TabsContent value="json_editor" className="mt-6">
-                    <Card className="bg-[#1a1c23] border-[#2d2f39] text-white">
-                        <CardHeader>
-                            <CardTitle className="text-emerald-400">Importación Masiva JSON</CardTitle>
-                            <CardDescription className="text-gray-300">
-                                Pega aquí tus datos de entrenamiento y cárgalos directamente a la memoria de Aurora.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <Textarea
-                                value={jsonInput}
-                                onChange={(e) => setJsonInput(e.target.value)}
-                                className="min-h-[300px] bg-slate-900 border-emerald-500/30 text-emerald-400 font-mono text-sm focus:border-emerald-500 transition-colors placeholder:text-emerald-700/50"
-                                placeholder='[
-  {
-    "pregunta": "Hola Aurora, ¿quién eres?",
-    "respuesta": "¡Hola! Soy Aurora Celestial... ✨",
-    "categoria": "identidad"
-  }
-]'
-                            />
-                            <Button onClick={processJsonInput} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold tracking-wide">
-                                <Brain className="w-4 h-4 mr-2" /> Entrenar a Aurora con JSON
-                            </Button>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
 
                 {/* TAB: KNOWLEDGE BASE */}
                 <TabsContent value="knowledge" className="space-y-6 mt-6">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div className="lg:col-span-1 space-y-6">
-                            {/* AI Control */}
-                            <Card className="bg-[#1a1c23] border-[#2d2f39] text-white">
-                                <CardHeader>
-                                    <CardTitle className="flex items-center text-lg">
-                                        <Zap className="w-5 h-5 mr-2 text-yellow-400" /> Control IA
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    {initProgress.progress > 0 && (
-                                        <div className="space-y-1">
-                                            <div className="flex justify-between text-xs text-gray-400">
-                                                <span>{initProgress.text}</span>
-                                                <span>{Math.round(initProgress.progress)}%</span>
-                                            </div>
-                                            <Progress value={initProgress.progress} className="h-1 bg-gray-700" />
-                                        </div>
-                                    )}
-                                    <Button
-                                        onClick={initializeWebLLM}
-                                        disabled={isLoading}
-                                        className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-                                    >
-                                        <Brain className="w-4 h-4 mr-2" /> {isLoading ? 'Cargando...' : 'Inicializar Web-LLM'}
-                                    </Button>
-
-                                    <div className="space-y-2 pt-2 border-t border-[#2d2f39]">
-                                        <Label className="text-xs text-gray-400">Modelo Seleccionado</Label>
-                                        <select
-                                            value={selectedModel}
-                                            onChange={(e) => handleModelChange(e.target.value)}
-                                            className="w-full bg-[#0f1115] border border-[#2d2f39] rounded p-2 text-sm text-gray-300"
-                                        >
-                                            {Object.entries(AVAILABLE_MODELS).map(([id, info]) => (
-                                                <option key={id} value={id}>{info.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </CardContent>
-                            </Card>
-
                             {/* New Entry Form */}
                             <Card className="bg-[#1a1c23] border-[#2d2f39] text-white">
                                 <CardHeader>
@@ -553,16 +349,10 @@ export const AdminTrainingTab = () => {
 
                             {/* File Actions */}
                             <Card className="bg-[#1a1c23] border-[#2d2f39] text-white">
-                                <CardContent className="p-4 flex gap-2">
-                                    <Button variant="outline" onClick={exportData} className="flex-1 bg-[#2d2f39] border-none text-gray-300 hover:bg-[#3d4150]">
-                                        <Download className="w-4 h-4 mr-2" /> Exportar
+                                <CardContent className="p-4">
+                                    <Button variant="outline" onClick={exportData} className="w-full bg-[#2d2f39] border-none text-gray-300 hover:bg-[#3d4150]">
+                                        <Download className="w-4 h-4 mr-2" /> Exportar Datos JSON
                                     </Button>
-                                    <div className="flex-1 relative">
-                                        <Input type="file" accept=".json" onChange={loadFromFile} className="absolute inset-0 opacity-0 cursor-pointer" />
-                                        <Button variant="outline" className="w-full bg-[#2d2f39] border-none text-gray-300 hover:bg-[#3d4150]">
-                                            <Upload className="w-4 h-4 mr-2" /> Importar
-                                        </Button>
-                                    </div>
                                 </CardContent>
                             </Card>
                         </div>

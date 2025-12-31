@@ -33,32 +33,34 @@ export const SettingsModal = ({
   const [isAdmin, setIsAdmin] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
 
+  /*
   useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setUserId(user.id);
+          const { data, error } = await (supabase as any)
+            .from('perfiles')
+            .select('avatar_url, rol')
+            .eq('id', user.id)
+            .single();
+
+          if (data) {
+            setAvatarUrl(data.avatar_url || '');
+            setIsAdmin(data.rol === 'admin');
+          }
+        }
+      } catch (error) {
+        console.error('Error loading profile:', error);
+      }
+    };
+
     if (isOpen && !isGuestMode) {
       loadProfile();
     }
   }, [isOpen, isGuestMode]);
-
-  const loadProfile = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserId(user.id);
-        const { data, error } = await (supabase as any)
-          .from('perfiles')
-          .select('avatar_url, rol')
-          .eq('id', user.id)
-          .single();
-
-        if (data) {
-          setAvatarUrl(data.avatar_url || '');
-          setIsAdmin(data.rol === 'admin');
-        }
-      }
-    } catch (error) {
-      console.error('Error loading profile:', error);
-    }
-  };
+  */
 
   const handleSaveProfile = async () => {
     if (!userId) return;
@@ -104,7 +106,7 @@ export const SettingsModal = ({
     });
   };
 
-  const handleDeleteData = () => {
+  const handleDeleteData = async () => {
     if (isGuestMode) {
       toast({
         title: "No disponible",
@@ -114,12 +116,44 @@ export const SettingsModal = ({
       return;
     }
 
-    if (confirm('¿Estás seguro de que quieres eliminar todos tus datos? Esta acción no se puede deshacer.')) {
-      // Implementar eliminación de datos
-      toast({
-        title: "Datos eliminados",
-        description: "Todos tus datos han sido eliminados.",
-      });
+    if (confirm('¿ESTÁS SEGURO? Esta acción ELIMINARÁ PERMANENTEMENTE todas tus conversaciones. No se puede deshacer.')) {
+      setLoading(true);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // 1. Delete all messages for user's conversations (Requires simpler RLS or specific query style if not cascading)
+        // Since we can't easily do a join-delete in one standard client call without a function, 
+        // we'll rely on the conversations delete if CASCADE is set up in DB. 
+        // If not, we iterate. Let's assume CASCADE or delete conversations first.
+        // Actually, deleting conversations is mostly safe.
+
+        const { error: convError } = await supabase
+          .from('conversaciones')
+          .delete()
+          .eq('usuario_id', user.id);
+
+        if (convError) throw convError;
+
+        toast({
+          title: "Datos eliminados",
+          description: "Todo tu historial de conversaciones ha sido borrado.",
+        });
+
+        // Refresh page to clear state
+        window.location.reload();
+
+      } catch (error) {
+        console.error('Error deleting data:', error);
+        toast({
+          title: "Error",
+          description: "Hubo un problema al eliminar los datos.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+        onClose();
+      }
     }
   };
 

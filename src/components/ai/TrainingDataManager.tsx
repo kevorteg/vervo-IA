@@ -1,26 +1,19 @@
-import { useState, useEffect } from 'react';
+Zimport { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Upload, Plus, Trash2, Save, FileText, Brain, Zap, Database, Settings, Download } from 'lucide-react';
+import { Upload, Plus, Trash2, FileText, Brain, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { webLLMManager, AVAILABLE_MODELS } from './WebLLMManager';
 
 interface TrainingEntry {
   id: string;
   question: string;
   answer: string;
   category: string;
-}
-
-interface InitProgress {
-  text: string;
-  progress: number;
 }
 
 export const TrainingDataManager = () => {
@@ -31,10 +24,6 @@ export const TrainingDataManager = () => {
     category: 'general'
   });
   const [isLoading, setIsLoading] = useState(false);
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const [stats, setStats] = useState<any>({});
-  const [initProgress, setInitProgress] = useState<InitProgress>({ text: '', progress: 0 });
-  const [selectedModel, setSelectedModel] = useState('Llama-3.2-1B-Instruct-q4f16_1-MLC');
   const { toast } = useToast();
 
   const categories = [
@@ -50,13 +39,6 @@ export const TrainingDataManager = () => {
 
   useEffect(() => {
     loadExistingData();
-    updateStats();
-    // Cargar modelo seleccionado del localStorage (config local)
-    const savedModel = localStorage.getItem('chatmj_selected_model');
-    if (savedModel && AVAILABLE_MODELS[savedModel as keyof typeof AVAILABLE_MODELS]) {
-      setSelectedModel(savedModel);
-      webLLMManager.setModel(savedModel);
-    }
   }, []);
 
   const loadExistingData = async () => {
@@ -77,8 +59,6 @@ export const TrainingDataManager = () => {
           category: item.categoria || 'general'
         }));
         setTrainingData(formattedData);
-        // También actualizar el WebLLM con los datos cargados
-        webLLMManager.loadCustomTrainingData(formattedData);
       }
     } catch (error) {
       console.error('Error loading training data:', error);
@@ -90,22 +70,7 @@ export const TrainingDataManager = () => {
     }
   };
 
-  const updateStats = () => {
-    const webLLMStats = webLLMManager.getTrainingStats();
-    setStats(webLLMStats);
-  };
 
-  const handleModelChange = (modelId: string) => {
-    setSelectedModel(modelId);
-    webLLMManager.setModel(modelId);
-    localStorage.setItem('chatmj_selected_model', modelId);
-
-    const modelInfo = AVAILABLE_MODELS[modelId as keyof typeof AVAILABLE_MODELS];
-    toast({
-      title: "🤖 Modelo seleccionado",
-      description: `${modelInfo.name} - ${modelInfo.description}`,
-    });
-  };
 
   const addTrainingEntry = async () => {
     if (!newEntry.question.trim() || !newEntry.answer.trim()) {
@@ -146,9 +111,6 @@ export const TrainingDataManager = () => {
         description: `Se agregó y guardó en la nube la nueva entrada.`,
       });
 
-      // Actualizar el modelo en memoria
-      webLLMManager.loadCustomTrainingData(updatedData);
-
     } catch (error) {
       console.error('Error adding entry:', error);
       toast({
@@ -171,9 +133,6 @@ export const TrainingDataManager = () => {
       const updatedData = trainingData.filter(entry => entry.id !== id);
       setTrainingData(updatedData);
 
-      // Actualizar modelo en memoria
-      webLLMManager.loadCustomTrainingData(updatedData);
-
       toast({
         title: "🗑️ Entrada eliminada",
         description: "Se eliminó correctamente de la base de datos.",
@@ -185,64 +144,6 @@ export const TrainingDataManager = () => {
         description: "No se pudo eliminar la entrada.",
         variant: "destructive",
       });
-    }
-  };
-
-  const saveToWebLLM = async () => {
-    // Ya no es necesario guardar explícitamente ya que lo hacemos al cargar/agregar/borrar
-    // Pero mantenemos la función para forzar una recarga si el usuario quiere
-    setIsLoading(true);
-    try {
-      await webLLMManager.loadCustomTrainingData(trainingData);
-      updateStats();
-
-      toast({
-        title: "🚀 Modelo Sincronizado",
-        description: `Datos sincronizados con el motor de IA local.`,
-      });
-    } catch (error) {
-      toast({
-        title: "❌ Error",
-        description: "No se pudieron cargar los datos en Web-LLM",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const initializeWebLLM = async () => {
-    setIsLoading(true);
-    setInitProgress({ text: 'Iniciando...', progress: 0 });
-
-    try {
-      const success = await webLLMManager.initialize((progress) => {
-        setInitProgress(progress);
-      });
-
-      updateStats();
-
-      if (success) {
-        toast({
-          title: "🎉 Web-LLM Inicializado",
-          description: `${AVAILABLE_MODELS[selectedModel as keyof typeof AVAILABLE_MODELS].name} cargado exitosamente`,
-        });
-      } else {
-        toast({
-          title: "⚠️ Modo Fallback",
-          description: "Web-LLM no disponible, usando patrones locales",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "❌ Error de inicialización",
-        description: "No se pudo inicializar Web-LLM. Verifica WebGPU en chrome://flags/",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-      setInitProgress({ text: '', progress: 0 });
     }
   };
 
@@ -293,7 +194,6 @@ export const TrainingDataManager = () => {
       version: "1.0",
       created: new Date().toISOString(),
       description: "Datos de entrenamiento de ChatMJ - Misión Juvenil",
-      selectedModel,
       data: trainingData,
       stats: {
         totalEntries: trainingData.length,
@@ -339,125 +239,8 @@ export const TrainingDataManager = () => {
             <div className="text-2xl font-bold">{trainingData.length}</div>
             <div className="text-sm opacity-90">Entradas</div>
           </div>
-          <div className="bg-white/10 rounded-lg p-3">
-            <div className="text-2xl font-bold">{stats.totalMessages || 0}</div>
-            <div className="text-sm opacity-90">Mensajes totales</div>
-          </div>
-          <div className="bg-white/10 rounded-lg p-3">
-            <div className="text-2xl font-bold">{stats.isInitialized ? '✅' : '❌'}</div>
-            <div className="text-sm opacity-90">Web-LLM</div>
-          </div>
-          <div className="bg-white/10 rounded-lg p-3">
-            <div className="text-2xl font-bold text-xs">{stats.currentModel?.name?.split(' ')[0] || 'N/A'}</div>
-            <div className="text-sm opacity-90">Modelo</div>
-          </div>
         </div>
       </div>
-
-      {/* Model Selection */}
-      <Card className="border-2 border-purple-200 dark:border-purple-800">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Settings className="w-6 h-6 mr-2 text-purple-600" />
-            Seleccionar Modelo Web-LLM
-          </CardTitle>
-          <CardDescription>
-            Elige el modelo de IA que mejor se adapte a tu hardware
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4">
-            {Object.entries(AVAILABLE_MODELS).map(([modelId, modelInfo]) => (
-              <div
-                key={modelId}
-                className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${selectedModel === modelId
-                  ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                  : 'border-gray-200 dark:border-gray-700 hover:border-purple-300'
-                  }`}
-                onClick={() => handleModelChange(modelId)}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-semibold text-lg">{modelInfo.name}</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                      {modelInfo.description}
-                    </p>
-                    <div className="flex gap-3 mt-2">
-                      <Badge variant="outline">
-                        💾 {modelInfo.memoryRequired}
-                      </Badge>
-                      <Badge variant="outline">
-                        📦 {modelInfo.downloadSize}
-                      </Badge>
-                    </div>
-                  </div>
-                  {selectedModel === modelId && (
-                    <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
-                      <div className="w-2 h-2 bg-white rounded-full"></div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Web-LLM Control */}
-      <Card className="border-2 border-aurora-primario/20">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Zap className="w-6 h-6 mr-2 text-aurora-primario" />
-            Control de Web-LLM
-          </CardTitle>
-          <CardDescription>
-            Inicializa y configura el modelo de IA local
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {initProgress.progress > 0 && initProgress.progress < 100 && (
-            <div className="mb-4 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>{initProgress.text}</span>
-                <span>{Math.round(initProgress.progress)}%</span>
-              </div>
-              <Progress value={initProgress.progress} className="w-full" />
-            </div>
-          )}
-
-          <div className="flex flex-wrap gap-3 mb-4">
-            <Button
-              onClick={initializeWebLLM}
-              disabled={isLoading}
-              className="bg-aurora-primario hover:bg-purple-700"
-            >
-              <Brain className="w-4 h-4 mr-2" />
-              {isLoading ? 'Inicializando...' : 'Inicializar Web-LLM'}
-            </Button>
-
-            <Button
-              onClick={saveToWebLLM}
-              disabled={isLoading || trainingData.length === 0}
-              variant="outline"
-            >
-              <Database className="w-4 h-4 mr-2" />
-              Cargar datos en IA
-            </Button>
-          </div>
-
-          <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-            <div>
-              {stats.isInitialized ?
-                `✅ Web-LLM activo con ${stats.currentModel?.name || 'modelo desconocido'}` :
-                '⚠️ Web-LLM no inicializado - usando respuestas por patrones'
-              }
-            </div>
-            <div className="text-xs">
-              💡 <strong>Tip:</strong> Si Web-LLM no funciona, habilita WebGPU en chrome://flags/
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Add New Entry */}
       <Card>

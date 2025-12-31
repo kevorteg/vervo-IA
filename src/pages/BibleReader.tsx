@@ -1,33 +1,114 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BibleService } from '@/services/BibleService';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Book, ChevronRight, ArrowLeft } from 'lucide-react';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { useIsMobile } from '@/hooks/use-mobile'; // Asumiendo que existe o usar window width
-import { Toaster } from "@/components/ui/sonner";
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+    Book,
+    ChevronRight,
+    ArrowLeft,
+    Search,
+    Menu,
+    MessageSquare,
+    ChevronDown,
+    X,
+    Sun,
+    Type,
+    Maximize2,
+    Minimize2,
+    Grid3X3,
+    Copy,
+    Bookmark,
+    Home
+} from 'lucide-react';
+import { BibleChat } from '@/components/bible/BibleChat';
+import { useToast } from '@/hooks/use-toast';
+
+// Book Categories Configuration
+const BOOK_CATEGORIES: Record<string, string[]> = {
+    'Pentateuco': ['GEN', 'EXO', 'LEV', 'NUM', 'DEU'],
+    'Históricos (AT)': ['JOS', 'JDG', 'RUT', '1SA', '2SA', '1KI', '2KI', '1CH', '2CH', 'EZR', 'NEH', 'EST'],
+    'Poéticos': ['JOB', 'PSA', 'PRO', 'ECC', 'SNG'],
+    'Profetas Mayores': ['ISA', 'JER', 'LAM', 'EZK', 'DAN'],
+    'Profetas Menores': ['HOS', 'JOL', 'AMO', 'OBA', 'JON', 'MIC', 'NAM', 'HAB', 'ZEP', 'HAG', 'ZEC', 'MAL'],
+    'Evangelios': ['MAT', 'MRK', 'LUK', 'JHN'],
+    'Históricos (NT)': ['ACT'],
+    'Cartas Paulinas': ['ROM', '1CO', '2CO', 'GAL', 'EPH', 'PHP', 'COL', '1TH', '2TH', '1TI', '2TI', 'TIT', 'PHM'],
+    'Cartas Generales': ['HEB', 'JAS', '1PE', '2PE', '1JN', '2JN', '3JN', 'JUD'],
+    'Profético (NT)': ['REV']
+};
+
+const getCategory = (bookId: string) => {
+    for (const [category, books] of Object.entries(BOOK_CATEGORIES)) {
+        if (books.includes(bookId)) return category;
+    }
+    return 'Otros';
+};
 
 export default function BibleReader() {
     const navigate = useNavigate();
+    const { toast } = useToast();
     const [books, setBooks] = useState<any[]>([]);
+    const [filteredBooks, setFilteredBooks] = useState<any[]>([]);
     const [currentBook, setCurrentBook] = useState<any>(null);
+    // ... rest of state
+
     const [chapters, setChapters] = useState<any[]>([]);
     const [currentChapter, setCurrentChapter] = useState<string | null>(null);
     const [content, setContent] = useState<string>('');
     const [loading, setLoading] = useState(false);
-    const [sidebarOpen, setSidebarOpen] = useState(false); // Para navegación móvil de libros
+
+    // Zen Mode states
+    const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [chatOpen, setChatOpen] = useState(true);
+    const [isZenMode, setIsZenMode] = useState(false);
+
+    const [searchQuery, setSearchQuery] = useState('');
+    const [fontSize, setFontSize] = useState(18);
+    const [currentVersion, setCurrentVersion] = useState('592420522e16049f-01'); // RVR1909 default
+
+    // UI States
+    const [showOT, setShowOT] = useState(true);
+    const [showNT, setShowNT] = useState(true);
+
+    // Reading Progress
+    const [readingProgress, setReadingProgress] = useState(0);
+    const scrollRef = useRef<HTMLDivElement>(null);
+
+    // Bookmarks
+    const [bookmarks, setBookmarks] = useState<any[]>([]);
+    const [showBookmarks, setShowBookmarks] = useState(true);
+
+    useEffect(() => {
+        const saved = localStorage.getItem('bible_bookmarks');
+        if (saved) {
+            try {
+                setBookmarks(JSON.parse(saved));
+            } catch (e) {
+                console.error('Error parsing bookmarks', e);
+            }
+        }
+    }, []);
 
     useEffect(() => {
         loadBooks();
-    }, []);
+    }, [currentVersion]);
+
+    useEffect(() => {
+        if (!searchQuery) {
+            setFilteredBooks(books);
+        } else {
+            setFilteredBooks(books.filter(b => b.name.toLowerCase().includes(searchQuery.toLowerCase())));
+        }
+    }, [searchQuery, books]);
 
     const loadBooks = async () => {
         try {
             setLoading(true);
-            const data = await BibleService.getBooks();
+            const data = await BibleService.getBooks(currentVersion);
             setBooks(data);
+            setFilteredBooks(data);
         } catch (error) {
             console.error(error);
         } finally {
@@ -41,13 +122,14 @@ export default function BibleReader() {
         setContent('');
         setLoading(true);
         try {
-            const ch = await BibleService.getChapters(book.id);
+            const ch = await BibleService.getChapters(book.id, currentVersion);
             setChapters(ch);
+            if (ch && ch.length > 0) {
+                await selectChapter(ch[0].id);
+            }
         } catch (error) {
             console.error(error);
-        } finally {
             setLoading(false);
-            setSidebarOpen(false); // Cerrar menú en móvil
         }
     };
 
@@ -55,7 +137,7 @@ export default function BibleReader() {
         setCurrentChapter(chapterId);
         setLoading(true);
         try {
-            const html = await BibleService.getChapterContent(chapterId);
+            const html = await BibleService.getChapterContent(chapterId, currentVersion);
             setContent(html);
         } catch (error) {
             console.error(error);
@@ -64,125 +146,399 @@ export default function BibleReader() {
         }
     };
 
+    const toggleZenMode = () => {
+        if (!isZenMode) {
+            setSidebarOpen(false);
+            setChatOpen(false);
+        } else {
+            setSidebarOpen(true);
+            setChatOpen(true);
+        }
+        setIsZenMode(!isZenMode);
+    };
+
+    const handleCopyChapter = () => {
+        if (!content) return;
+        // Create temp element to strip HTML
+        const tmp = document.createElement("DIV");
+        tmp.innerHTML = content;
+        const text = tmp.textContent || tmp.innerText || "";
+        const reference = `${currentBook?.name} ${chapters.find(c => c.id === currentChapter)?.number} (RVR1909)`;
+
+        navigator.clipboard.writeText(`${text}\n\n${reference}`);
+        toast({ title: "Copiado", description: "Capítulo copiado al portapapeles." });
+    };
+
+    const toggleBookmark = () => {
+        if (!currentChapter || !currentBook) return;
+
+        const exists = bookmarks.some(b => b.id === currentChapter);
+        let newBookmarks;
+
+        if (exists) {
+            newBookmarks = bookmarks.filter(b => b.id !== currentChapter);
+            toast({ title: "Eliminado", description: "Marcador eliminado de favoritos." });
+        } else {
+            const newBookmark = {
+                id: currentChapter,
+                bookId: currentBook.id,
+                bookName: currentBook.name,
+                chapterNumber: chapters.find(c => c.id === currentChapter)?.number,
+                timestamp: Date.now()
+            };
+            newBookmarks = [newBookmark, ...bookmarks];
+            toast({ title: "Guardado", description: "Capítulo guardado en favoritos." });
+        }
+
+        setBookmarks(newBookmarks);
+        localStorage.setItem('bible_bookmarks', JSON.stringify(newBookmarks));
+    };
+
+    const handleSelectBookmark = async (b: any) => {
+        setLoading(true);
+        try {
+            setCurrentBook({ id: b.bookId, name: b.bookName });
+            const ch = await BibleService.getChapters(b.bookId, currentVersion);
+            setChapters(ch);
+            await selectChapter(b.id);
+            if (window.innerWidth < 768) setSidebarOpen(false);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleNextChapter = () => {
+        if (!currentChapter || !chapters.length) return;
+        const idx = chapters.findIndex(c => c.id === currentChapter);
+        if (idx !== -1 && idx < chapters.length - 1) {
+            selectChapter(chapters[idx + 1].id);
+        }
+    };
+
+    const handlePrevChapter = () => {
+        if (!currentChapter || !chapters.length) return;
+        const idx = chapters.findIndex(c => c.id === currentChapter);
+        if (idx > 0) {
+            selectChapter(chapters[idx - 1].id);
+        }
+    };
+
+    // Scroll progress handler
+    const handleScroll = (e: any) => {
+        const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+        const progress = (scrollTop / (scrollHeight - clientHeight)) * 100;
+        setReadingProgress(progress);
+    };
+
+    // State for toggling categories (all open by default)
+    const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
+        'Pentateuco': true,
+        'Históricos (AT)': false,
+        'Poéticos': false,
+        'Profetas Mayores': false,
+        'Profetas Menores': false,
+        'Evangelios': true,
+        'Históricos (NT)': false,
+        'Cartas Paulinas': false,
+        'Cartas Generales': false,
+        'Profético (NT)': false
+    });
+
+    const toggleCategory = (cat: string) => {
+        setOpenCategories(prev => ({ ...prev, [cat]: !prev[cat] }));
+    };
+
+    const handleThemeToggle = () => {
+        toast({ title: "Próximamente", description: "El cambio de tema estará disponible pronto." });
+    };
+
+    // Group filtered books by category
+    const getBooksByCategory = () => {
+        const grouped: Record<string, any[]> = {};
+        filteredBooks.forEach(book => {
+            const cat = getCategory(book.id);
+            if (!grouped[cat]) grouped[cat] = [];
+            grouped[cat].push(book);
+        });
+        return grouped;
+    };
+
+    const booksByCategory = getBooksByCategory();
+
     return (
-        <div className="flex bg-[#111215] min-h-screen text-white font-sans">
-            <div className="hidden md:flex flex-col w-16 border-r border-[#2d2f39] bg-[#16181d] items-center py-4 gap-4">
-                <Button variant="ghost" size="icon" onClick={() => navigate('/')} title="Volver al Chat" className="hover:bg-purple-900/20 text-gray-400 hover:text-white">
-                    <ArrowLeft className="w-6 h-6" />
-                </Button>
-                <div className="w-8 h-[1px] bg-[#2d2f39]" />
-                <Book className="w-6 h-6 text-purple-500" />
-            </div>
-            <main className="flex-1 flex flex-col md:flex-row h-screen overflow-hidden relative">
+        <div className="flex bg-[#09090b] h-screen text-gray-100 font-sans overflow-hidden">
 
-                {/* Mobile Header / Navigation */}
-                <div className="md:hidden p-4 border-b border-gray-800 flex items-center justify-between">
-                    <h1 className="text-xl font-bold flex items-center gap-2">
-                        <Book className="w-5 h-5 text-purple-400" />
-                        Biblia
-                    </h1>
-                    <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-                        <SheetTrigger asChild>
-                            <Button variant="outline" size="sm">Libros</Button>
-                        </SheetTrigger>
-                        <SheetContent side="left" className="bg-[#1a1c23] border-gray-800 text-white w-[300px]">
-                            <div className="h-full overflow-y-auto py-4">
-                                <h2 className="text-lg font-bold mb-4 px-2">Libros</h2>
-                                {books.map(book => (
-                                    <Button
-                                        key={book.id}
-                                        variant="ghost"
-                                        className={`w-full justify-start mb-1 ${currentBook?.id === book.id ? 'bg-purple-900/40 text-purple-300' : 'text-gray-400'}`}
-                                        onClick={() => selectBook(book)}
-                                    >
-                                        {book.name}
-                                    </Button>
-                                ))}
-                            </div>
-                        </SheetContent>
-                    </Sheet>
-                </div>
-
-                {/* Desktop Sidebar: Books */}
-                <div className="hidden md:flex flex-col w-64 border-r border-[#2d2f39] bg-[#16181d]">
-                    <div className="p-4 border-b border-[#2d2f39]">
-                        <h2 className="font-bold flex items-center gap-2 text-purple-400">
-                            <Book className="w-5 h-5" /> Libros
-                        </h2>
+            {/* LEFT SIDEBAR: Navigation */}
+            <div className={`
+                ${sidebarOpen ? 'w-80' : 'w-0'}
+                transition-all duration-300 ease-in-out border-r border-gray-800 bg-[#111215] flex flex-col relative
+            `}>
+                <div className="p-4 border-b border-gray-800 flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-yellow-500 font-bold text-xl">
+                        <Book className="w-6 h-6" /> BibliaAI
                     </div>
-                    <ScrollArea className="flex-1">
-                        <div className="p-2 space-y-1">
-                            {books.map(book => (
-                                <Button
-                                    key={book.id}
-                                    variant="ghost"
-                                    className={`w-full justify-start text-sm ${currentBook?.id === book.id ? 'bg-purple-900/40 text-purple-300' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
-                                    onClick={() => selectBook(book)}
-                                >
-                                    {book.name}
-                                </Button>
-                            ))}
-                        </div>
-                    </ScrollArea>
+                    <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(false)} className="md:hidden">
+                        <X className="w-4 h-4" />
+                    </Button>
                 </div>
 
-                {/* Chapters & Content Area */}
-                <div className="flex-1 flex flex-col h-full">
-                    {currentBook ? (
-                        <>
-                            {/* Chapter Selection Bar */}
-                            <div className="p-4 border-b border-[#2d2f39] bg-[#1a1c23] flex items-center gap-2 overflow-x-auto whitespace-nowrap scrollbar-hide">
-                                <span className="font-semibold px-2">{currentBook.name}</span>
-                                <ChevronRight className="w-4 h-4 text-gray-600" />
-                                {chapters.map(ch => (
-                                    <Button
-                                        key={ch.id}
-                                        size="sm"
-                                        variant={currentChapter === ch.id ? "default" : "secondary"}
-                                        onClick={() => selectChapter(ch.id)}
-                                        className={`rounded-full w-8 h-8 p-0 ${currentChapter === ch.id ? 'bg-purple-600 hover:bg-purple-700' : 'bg-[#2d2f39] text-gray-300 hover:bg-[#3d4150]'}`}
+                <div className="p-4">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                        <input
+                            type="text"
+                            placeholder="Buscar libro..."
+                            className="w-full bg-[#1c1e24] border border-gray-700 rounded-lg py-2 pl-9 pr-4 text-sm focus:outline-none focus:border-yellow-500 transition-colors"
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+                </div>
+
+                <ScrollArea className="flex-1 px-2">
+                    {/* Favoritos */}
+                    <div className="mb-4">
+                        <button
+                            onClick={() => setShowBookmarks(!showBookmarks)}
+                            className="flex items-center justify-between w-full p-2 text-xs font-semibold text-yellow-500 uppercase hover:text-yellow-400 group"
+                        >
+                            <span className="flex items-center gap-2"><Bookmark className="w-3 h-3 group-hover:fill-current" /> Favoritos ({bookmarks.length})</span>
+                            <ChevronDown className={`w-3 h-3 transition-transform ${showBookmarks ? '' : '-rotate-90'}`} />
+                        </button>
+                        {showBookmarks && (
+                            <div className="space-y-0.5 ml-2 border-l border-yellow-500/20 pl-2 mb-2">
+                                {bookmarks.map(b => (
+                                    <button
+                                        key={b.id}
+                                        onClick={() => handleSelectBookmark(b)}
+                                        className="w-full text-left px-3 py-2 rounded-md text-sm transition-colors text-gray-400 hover:bg-gray-800 hover:text-white truncate flex justify-between items-center group/item"
                                     >
-                                        {ch.number}
-                                    </Button>
+                                        <span>{b.bookName} {b.chapterNumber}</span>
+                                        <ChevronRight className="w-3 h-3 opacity-0 group-hover/item:opacity-100" />
+                                    </button>
                                 ))}
+                                {bookmarks.length === 0 && <p className="text-xs text-gray-600 p-2 italic">Sin marcadores.</p>}
                             </div>
+                        )}
+                    </div>
 
-                            {/* Content Reader */}
-                            <ScrollArea className="flex-1 bg-[#111215] p-6 md:p-12">
-                                {loading && (
-                                    <div className="h-full flex items-center justify-center">
-                                        <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+                    {/* Dynamic Categories */}
+                    {Object.keys(BOOK_CATEGORIES).map(category => {
+                        const categoryBooks = booksByCategory[category] || [];
+                        if (categoryBooks.length === 0) return null; // Don't show empty categories
+
+                        return (
+                            <div key={category} className="mb-2">
+                                <button
+                                    onClick={() => toggleCategory(category)}
+                                    className="flex items-center justify-between w-full p-2 text-xs font-semibold text-gray-500 uppercase hover:text-gray-300 hover:bg-gray-800/50 rounded"
+                                >
+                                    {category}
+                                    <ChevronDown className={`w-3 h-3 transition-transform ${openCategories[category] ? '' : '-rotate-90'}`} />
+                                </button>
+                                {openCategories[category] && (
+                                    <div className="space-y-0.5 ml-2 border-l border-gray-800 pl-2">
+                                        {categoryBooks.map(book => (
+                                            <button
+                                                key={book.id}
+                                                onClick={() => selectBook(book)}
+                                                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex justify-between items-center group ${currentBook?.id === book.id ? 'bg-yellow-500/10 text-yellow-500 font-medium' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                                                    }`}
+                                            >
+                                                {book.name}
+                                                <ChevronRight className={`w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity ${currentBook?.id === book.id ? 'opacity-100' : ''}`} />
+                                            </button>
+                                        ))}
                                     </div>
                                 )}
+                            </div>
+                        );
+                    })}
+                </ScrollArea>
 
-                                {!loading && content && (
-                                    <div className="max-w-3xl mx-auto prose prose-invert prose-lg">
-                                        <style>{`
-                                    .v { color: #a8a29e; font-size: 0.75em; vertical-align: super; margin-right: 4px; user-select: none; }
-                                    .p { margin-bottom: 1em; line-height: 1.8; }
-                                    .q { margin-left: 20px; font-style: italic; color: #d1d5db; }
-                                    .wj { color: #ef4444; } /* Palabras de Jesús en rojo si la API lo soporta */
-                                    h1, h2, h3 { color: #e9d5ff; font-family: sans-serif; }
-                                `}</style>
-                                        <div dangerouslySetInnerHTML={{ __html: content }} />
-                                    </div>
-                                )}
-
-                                {!loading && !content && (
-                                    <div className="h-full flex flex-col items-center justify-center text-gray-500">
-                                        <p>Selecciona un capítulo para comenzar a leer.</p>
-                                    </div>
-                                )}
-                            </ScrollArea>
-                        </>
-                    ) : (
-                        <div className="h-full flex flex-col items-center justify-center text-gray-500 gap-4">
-                            <Book className="w-16 h-16 opacity-20" />
-                            <p className="text-lg">Selecciona un libro del menú para leer la Biblia</p>
-                        </div>
-                    )}
+                {/* Footer Nav */}
+                <div className="border-t border-gray-800 p-4 space-y-2">
+                    <Button
+                        variant="outline"
+                        className="w-full justify-start gap-2 border-gray-700 bg-transparent text-gray-400 hover:bg-gray-800 hover:text-white"
+                        onClick={() => navigate('/')}
+                    >
+                        <Home className="w-4 h-4" /> Volver al Inicio
+                    </Button>
                 </div>
-            </main>
+            </div>
+
+            {/* TOGGLE BUTTON FOR MOBILE */}
+            {!sidebarOpen && (
+                <div className="absolute top-4 left-4 z-50">
+                    <Button size="icon" variant="ghost" onClick={() => setSidebarOpen(true)} className="bg-black/50 backdrop-blur">
+                        <Menu className="w-5 h-5" />
+                    </Button>
+                </div>
+            )}
+
+            {/* MAIN CONTENT: Text */}
+            <div className="flex-1 flex flex-col h-full bg-[#09090b] relative transition-all duration-500">
+                {/* Progress Bar */}
+                <div className="h-1 bg-gray-800 w-full">
+                    <div className="h-full bg-yellow-500 transition-all duration-300" style={{ width: `${readingProgress}%` }} />
+                </div>
+
+                {/* Toolbar */}
+                <div className="h-16 border-b border-gray-800 flex items-center justify-between px-6 bg-[#09090b] z-20">
+                    <div className="flex items-center gap-4">
+                        <h2 className="text-xl font-serif text-white hidden md:block">
+                            {currentBook ? currentBook.name : 'Biblia'}
+                        </h2>
+
+                        {/* Chapter Grid Selector */}
+                        {currentBook && (
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button variant="outline" className="border-gray-700 hover:bg-gray-800 flex gap-2 items-center">
+                                        <Grid3X3 className="w-4 h-4 text-gray-400" />
+                                        <span>
+                                            {currentChapter
+                                                ? `Cap. ${chapters.find(c => c.id === currentChapter)?.number}`
+                                                : 'Capítulos'}
+                                        </span>
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-80 bg-[#1c1e24] border-gray-700 text-white p-4">
+                                    <h4 className="mb-4 font-medium text-gray-400 border-b border-gray-700 pb-2">Seleccionar Capítulo</h4>
+                                    <div className="grid grid-cols-5 gap-2 max-h-60 overflow-y-auto">
+                                        {chapters.map(ch => (
+                                            <button
+                                                key={ch.id}
+                                                onClick={() => selectChapter(ch.id)}
+                                                className={`p-2 rounded hover:bg-yellow-500 hover:text-black text-sm transition-colors ${currentChapter === ch.id ? 'bg-yellow-500 text-black font-bold' : 'bg-gray-800 text-gray-300'
+                                                    }`}
+                                            >
+                                                {ch.number}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
+                        )}
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                        {/* Font Size */}
+                        <div className="flex items-center bg-[#1c1e24] rounded-lg p-1 mr-2">
+                            <Button variant="ghost" size="sm" onClick={() => setFontSize(Math.max(12, fontSize - 2))} className="h-7 w-7 p-0 hover:bg-gray-700"><Type className="w-3 h-3" /></Button>
+                            <span className="text-xs w-8 text-center text-gray-400">{fontSize}</span>
+                            <Button variant="ghost" size="sm" onClick={() => setFontSize(Math.min(32, fontSize + 2))} className="h-7 w-7 p-0 hover:bg-gray-700"><Type className="w-4 h-4" /></Button>
+                        </div>
+
+                        {/* Theme placeholder */}
+                        <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white" onClick={handleThemeToggle}>
+                            <Sun className="w-5 h-5" />
+                        </Button>
+
+                        {/* Copy Button */}
+                        <Button variant="ghost" size="icon" onClick={handleCopyChapter} title="Copiar Capítulo" className="hidden md:flex">
+                            <Copy className="w-4 h-4 text-gray-400" />
+                        </Button>
+
+                        {/* Bookmark Toggle */}
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={toggleBookmark}
+                            title="Guardar en Favoritos"
+                            className={bookmarks.some(b => b.id === currentChapter) ? "text-yellow-500" : "text-gray-400"}
+                        >
+                            <Bookmark className={`w-4 h-4 ${bookmarks.some(b => b.id === currentChapter) ? 'fill-current' : ''}`} />
+                        </Button>
+
+                        {/* Zen Mode Toggle */}
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={toggleZenMode}
+                            title={isZenMode ? "Salir de Zen" : "Modo Zen"}
+                            className={isZenMode ? "text-yellow-500" : "text-gray-400"}
+                        >
+                            {isZenMode ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+                        </Button>
+
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className={`text-gray-400 hover:text-yellow-500 ${chatOpen && !isZenMode ? 'bg-yellow-500/10 text-yellow-500' : ''}`}
+                            onClick={() => {
+                                setChatOpen(!chatOpen);
+                                setIsZenMode(false); // Creating chat exits Zen implicitly
+                            }}
+                        >
+                            <MessageSquare className="w-5 h-5" />
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Text Area */}
+                <ScrollArea className="flex-1" onScrollCapture={handleScroll}>
+                    <div className="max-w-3xl mx-auto px-8 py-12">
+                        {loading && !content ? (
+                            <div className="flex flex-col items-center justify-center h-64 text-gray-500 animate-pulse">
+                                <Book className="w-12 h-12 mb-4 opacity-50" />
+                                <p>Cargando escritura...</p>
+                            </div>
+                        ) : content ? (
+                            <>
+                                <h1 className="text-4xl font-serif text-center mb-2 text-white">{currentBook?.name}</h1>
+                                <p className="text-center text-yellow-500/80 mb-12 tracking-widest text-sm uppercase">CAPITULO {chapters.find(c => c.id === currentChapter)?.number}</p>
+
+                                <div
+                                    className="prose prose-invert prose-lg max-w-none font-serif leading-relaxed text-gray-300"
+                                    style={{ fontSize: `${fontSize}px` }}
+                                >
+                                    <style>{`
+                                        .v { color: #6b7280; font-size: 0.6em; vertical-align: super; margin-right: 0.5em; user-select: none; font-family: sans-serif; }
+                                        .p { margin-bottom: 1.5em; }
+                                        .q { font-style: italic; color: #9ca3af; margin-left: 1.5em; }
+                                        .wj { color: #fca5a5; } /* Words of Jesus */
+                                        .s { color: #fbbf24; font-size: 0.9em; font-weight: bold; margin-top: 2em; margin-bottom: 1em; font-family: sans-serif; text-transform: uppercase; letter-spacing: 0.05em; }
+                                    `}</style>
+                                    <div dangerouslySetInnerHTML={{ __html: content }} />
+                                </div>
+
+                                {/* Chapter Navigation Footer */}
+                                <div className="flex justify-between mt-16 pt-8 border-t border-gray-800">
+                                    <Button variant="ghost" onClick={handlePrevChapter} disabled={!chapters[0] || currentChapter === chapters[0].id}>
+                                        Anterior
+                                    </Button>
+                                    <Button variant="ghost" onClick={handleNextChapter} disabled={!chapters[chapters.length - 1] || currentChapter === chapters[chapters.length - 1].id}>
+                                        Siguiente
+                                    </Button>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center h-full text-gray-500 mt-20">
+                                <Book className="w-20 h-20 mb-6 opacity-10" />
+                                <h3 className="text-xl font-medium text-gray-400">Comienza tu lectura</h3>
+                                <p className="text-sm mt-2">Selecciona un libro del menú para empezar.</p>
+                            </div>
+                        )}
+                    </div>
+                </ScrollArea>
+            </div>
+
+            {/* RIGHT SIDEBAR: Chat context */}
+            <div className={`
+                ${chatOpen ? 'w-[400px]' : 'w-0'} 
+                transition-all duration-300 ease-in-out border-l border-gray-800 bg-[#111215] flex flex-col overflow-hidden
+            `}>
+                <BibleChat
+                    currentBookName={currentBook?.name}
+                    currentChapter={chapters.find(c => c.id === currentChapter)?.number}
+                    chapterContent={content} // This might be HTML, but BibleChat truncates it for context
+                />
+            </div>
+
         </div>
     );
 }

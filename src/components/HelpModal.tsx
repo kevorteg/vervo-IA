@@ -14,7 +14,7 @@ export const HelpModal = ({ isOpen, onClose }: HelpModalProps) => {
   const { toast } = useToast();
 
   const handleContactSupport = () => {
-    <h3 className="font-medium text-gray-900 dark:text-white">Consejos para usar Verbo IA</h3>
+    const message = encodeURIComponent("Hola, necesito soporte con Verbo IA");
     window.open(`https://wa.me/1234567890?text=${message}`, '_blank');
     toast({
       title: "Redirigiendo a WhatsApp",
