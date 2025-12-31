@@ -23,11 +23,15 @@ const API_KEY = 'f83eae0edabaf9130d553f5e4931cf36';
 const BIBLE_ID = '592420522e16049f-01'; // Reina Valera 1909 (Public Domain)
 
 export class BibleService {
-    private static baseUrl = 'https://api.scripture.api.bible/v1';
+    private static readonly BASE_URL = 'https://api.scripture.api.bible/v1';
+
+    // RVR1960: No disponible por defecto.
+    // RVR1909: 592420522e16049f-01
+    private static readonly DEFAULT_VERSION = '592420522e16049f-01';
 
     private static async fetchAPI(endpoint: string) {
         try {
-            const response = await fetch(`${this.baseUrl}${endpoint}`, {
+            const response = await fetch(`${this.BASE_URL}${endpoint}`, {
                 headers: {
                     'api-key': API_KEY,
                 },

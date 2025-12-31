@@ -53,6 +53,7 @@ interface SidebarProps {
   isGuestMode?: boolean;
   onExitGuestMode?: () => void;
   isAdmin?: boolean;
+  avatarUrl?: string;
 }
 
 export const Sidebar = ({
@@ -69,7 +70,8 @@ export const Sidebar = ({
   isGuestMode = false,
   onExitGuestMode,
   isAdmin = false,
-  onDeleteConversation
+  onDeleteConversation,
+  avatarUrl
 }: SidebarProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showHelp, setShowHelp] = useState(false);
@@ -324,8 +326,14 @@ export const Sidebar = ({
         {/* User info */}
         <div className="border-t border-gray-200 dark:border-gray-700 p-4">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
-              {isGuestMode ? <UserX className="w-4 h-4 text-gray-600 dark:text-gray-400" /> : <User className="w-4 h-4 text-gray-600 dark:text-gray-400" />}
+            <div className={`w-8 h-8 rounded-full ${avatarUrl ? '' : 'bg-gray-300 dark:bg-gray-600'} flex items-center justify-center overflow-hidden`}>
+              {isGuestMode ? (
+                <UserX className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+              ) : avatarUrl ? (
+                <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <User className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 dark:text-white truncate">

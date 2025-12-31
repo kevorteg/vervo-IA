@@ -46,6 +46,14 @@ const getCategory = (bookId: string) => {
     return 'Otros';
 };
 
+const AVAILABLE_VERSIONS = [
+    { id: '592420522e16049f-01', name: 'Reina Valera 1909', shortName: 'RVR09' },
+    { id: '6b7f504f1b6050c1-01', name: 'Nueva Biblia Viva 2008', shortName: 'NBV' },
+    { id: '48acedcf8595c754-01', name: 'Palabra de Dios para ti', shortName: 'PDPT' },
+    { id: 'b32b9d1b64b4ef29-01', name: 'Biblia en Lenguaje Sencillo', shortName: 'BLS' },
+    { id: '482ddd53705278cc-02', name: 'Versión Biblia Libre', shortName: 'VBL' }
+];
+
 export default function BibleReader() {
     const navigate = useNavigate();
     const { toast } = useToast();
@@ -66,7 +74,75 @@ export default function BibleReader() {
 
     const [searchQuery, setSearchQuery] = useState('');
     const [fontSize, setFontSize] = useState(18);
-    const [currentVersion, setCurrentVersion] = useState('592420522e16049f-01'); // RVR1909 default
+    const [currentVersion, setCurrentVersion] = useState('592420522e16049f-01');
+
+    const loadBooks = async () => {
+        try {
+            setLoading(true);
+            const data = await BibleService.getBooks(currentVersion);
+            setBooks(data);
+            setFilteredBooks(data);
+        } catch (error) {
+            console.error(error);
+            toast({
+                title: "Error de conexión",
+                description: "No se pudieron cargar los libros. Verifica tu conexión.",
+                variant: "destructive"
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const selectBook = async (book: any) => {
+        setCurrentBook(book);
+        setLoading(true);
+        try {
+            const ch = await BibleService.getChapters(book.id, currentVersion);
+            setChapters(ch);
+            if (ch.length > 0) {
+                await selectChapter(ch[0].id);
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const selectChapter = async (chapterId: string) => {
+        setLoading(true);
+        setCurrentChapter(chapterId);
+        try {
+            const data = await BibleService.getChapterContent(chapterId, currentVersion);
+            setContent(data);
+            // Update URL
+            const bookId = chapterId.split('.')[0];
+            const chapterNum = chapters.find(c => c.id === chapterId)?.number || '1';
+            navigate(`/biblia?book=${bookId}&chapter=${chapterNum}`, { replace: true });
+
+            if (scrollRef.current) scrollRef.current.scrollTop = 0;
+            if (window.innerWidth < 768) setSidebarOpen(false);
+        } catch (error) {
+            console.error(error);
+            toast({ title: "Error", description: "No se pudo cargar el contenido del capítulo.", variant: "destructive" });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadBooks();
+    }, [currentVersion]);
+
+    useEffect(() => {
+        if (searchQuery) {
+            const filtered = books.filter(b => b.name.toLowerCase().includes(searchQuery.toLowerCase()));
+            setFilteredBooks(filtered);
+        } else {
+            setFilteredBooks(books);
+        }
+    }, [searchQuery, books]);
 
     // UI States
     const [showOT, setShowOT] = useState(true);
@@ -80,71 +156,68 @@ export default function BibleReader() {
     const [bookmarks, setBookmarks] = useState<any[]>([]);
     const [showBookmarks, setShowBookmarks] = useState(true);
 
+    // URL Params Handling
     useEffect(() => {
-        const saved = localStorage.getItem('bible_bookmarks');
-        if (saved) {
-            try {
-                setBookmarks(JSON.parse(saved));
-            } catch (e) {
-                console.error('Error parsing bookmarks', e);
+        const params = new URLSearchParams(window.location.search);
+        const bookParam = params.get('book');
+        const chapterParam = params.get('chapter');
+
+        if (bookParam && books.length > 0) {
+            const bookToSelect = books.find(b => b.id === bookParam || b.name.toLowerCase() === bookParam.toLowerCase());
+            if (bookToSelect) {
+                selectBook(bookToSelect).then(() => {
+                    if (chapterParam) {
+                        // We need chapters loaded first, which selectBook does.
+                        // But selectBook is async and sets state. 
+                        // It's better to chain the chapter selection after chapters load in a separate effect or promise.
+                        // For simplicity in this logic block, we might need a distinct approach.
+                        // Let's rely on the fact that selectBook sets chapters. 
+                        // Actually, selectBook calls API. We should probably pass chap param to selectBook or handle it there.
+                        // Revised approach:
+                    }
+                });
             }
         }
-    }, []);
+    }, [books]); // Run when books load
 
+    // Better param handling:
     useEffect(() => {
-        loadBooks();
-    }, [currentVersion]);
+        const handleDeepLink = async () => {
+            const params = new URLSearchParams(window.location.search);
+            const bookId = params.get('book');
+            const chapterNum = params.get('chapter');
 
-    useEffect(() => {
-        if (!searchQuery) {
-            setFilteredBooks(books);
-        } else {
-            setFilteredBooks(books.filter(b => b.name.toLowerCase().includes(searchQuery.toLowerCase())));
-        }
-    }, [searchQuery, books]);
+            if (bookId && books.length > 0 && !currentBook) {
+                const book = books.find(b => b.id === bookId);
+                if (book) {
+                    setCurrentBook(book);
+                    setLoading(true);
+                    try {
+                        const ch = await BibleService.getChapters(book.id, currentVersion);
+                        setChapters(ch);
 
-    const loadBooks = async () => {
-        try {
-            setLoading(true);
-            const data = await BibleService.getBooks(currentVersion);
-            setBooks(data);
-            setFilteredBooks(data);
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setLoading(false);
-        }
-    };
+                        let chapterId;
+                        if (chapterNum) {
+                            const foundChapter = ch.find((c: any) => c.number === chapterNum);
+                            if (foundChapter) chapterId = foundChapter.id;
+                        }
 
-    const selectBook = async (book: any) => {
-        setCurrentBook(book);
-        setCurrentChapter(null);
-        setContent('');
-        setLoading(true);
-        try {
-            const ch = await BibleService.getChapters(book.id, currentVersion);
-            setChapters(ch);
-            if (ch && ch.length > 0) {
-                await selectChapter(ch[0].id);
+                        if (!chapterId && ch.length > 0) chapterId = ch[0].id;
+
+                        if (chapterId) {
+                            await selectChapter(chapterId);
+                        }
+                    } catch (e) {
+                        console.error(e);
+                    } finally {
+                        setLoading(false);
+                    }
+                }
             }
-        } catch (error) {
-            console.error(error);
-            setLoading(false);
-        }
-    };
+        };
 
-    const selectChapter = async (chapterId: string) => {
-        setCurrentChapter(chapterId);
-        setLoading(true);
-        try {
-            const html = await BibleService.getChapterContent(chapterId, currentVersion);
-            setContent(html);
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setLoading(false);
-        }
-    };
+        handleDeepLink();
+    }, [books, currentVersion]); // Depend on books loaded
 
     const toggleZenMode = () => {
         if (!isZenMode) {
@@ -432,6 +505,35 @@ export default function BibleReader() {
                             <span className="text-xs w-8 text-center text-gray-400">{fontSize}</span>
                             <Button variant="ghost" size="sm" onClick={() => setFontSize(Math.min(32, fontSize + 2))} className="h-7 w-7 p-0 hover:bg-gray-700"><Type className="w-4 h-4" /></Button>
                         </div>
+
+                        {/* Version Selector */}
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 text-gray-400 hover:text-white mr-2">
+                                    <span className="mr-2 text-xs uppercase tracking-wider">
+                                        {AVAILABLE_VERSIONS.find(v => v.id === currentVersion)?.shortName || 'Versión'}
+                                    </span>
+                                    <ChevronDown className="w-3 h-3" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-64 bg-[#1c1e24] border-gray-700 p-1">
+                                <div className="space-y-1">
+                                    {AVAILABLE_VERSIONS.map(v => (
+                                        <button
+                                            key={v.id}
+                                            onClick={() => setCurrentVersion(v.id)}
+                                            className={`w-full text-left px-3 py-2 text-sm rounded transition-colors ${currentVersion === v.id
+                                                ? 'bg-yellow-500/10 text-yellow-500 font-medium'
+                                                : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                                                }`}
+                                        >
+                                            <div className="font-medium">{v.shortName}</div>
+                                            <div className="text-xs text-gray-500 truncate">{v.name}</div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </PopoverContent>
+                        </Popover>
 
                         {/* Theme placeholder */}
                         <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white" onClick={handleThemeToggle}>

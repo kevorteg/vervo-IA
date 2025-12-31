@@ -2,6 +2,16 @@
 import { useState, useEffect } from 'react';
 import { X, Moon, Sun, Download, Trash2, User, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -13,6 +23,7 @@ interface SettingsModalProps {
   userName?: string;
   isGuestMode?: boolean;
   onExitGuestMode?: () => void;
+  onProfileUpdated?: () => void;
 }
 
 export const SettingsModal = ({
@@ -22,18 +33,17 @@ export const SettingsModal = ({
   onToggleDarkMode,
   userName,
   isGuestMode = false,
-  onExitGuestMode
+  onExitGuestMode,
+  onProfileUpdated
 }: SettingsModalProps) => {
   const { toast } = useToast();
-
-  if (!isOpen) return null;
 
   const [avatarUrl, setAvatarUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  /*
   useEffect(() => {
     const loadProfile = async () => {
       try {
@@ -60,7 +70,10 @@ export const SettingsModal = ({
       loadProfile();
     }
   }, [isOpen, isGuestMode]);
-  */
+
+  if (!isOpen) return null;
+
+
 
   const handleSaveProfile = async () => {
     if (!userId) return;
@@ -77,7 +90,10 @@ export const SettingsModal = ({
         title: "Perfil actualizado",
         description: "Tu foto de perfil se ha guardado correctamente.",
       });
-      // Force reload or callback if needed, but for now this suffices
+
+      if (onProfileUpdated) {
+        onProfileUpdated();
+      }
     } catch (error) {
       toast({
         title: "Error",
@@ -106,6 +122,8 @@ export const SettingsModal = ({
     });
   };
 
+
+
   const handleDeleteData = async () => {
     if (isGuestMode) {
       toast({
@@ -116,44 +134,67 @@ export const SettingsModal = ({
       return;
     }
 
-    if (confirm('¿ESTÁS SEGURO? Esta acción ELIMINARÁ PERMANENTEMENTE todas tus conversaciones. No se puede deshacer.')) {
-      setLoading(true);
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+    setShowDeleteDialog(true);
+  };
 
-        // 1. Delete all messages for user's conversations (Requires simpler RLS or specific query style if not cascading)
-        // Since we can't easily do a join-delete in one standard client call without a function, 
-        // we'll rely on the conversations delete if CASCADE is set up in DB. 
-        // If not, we iterate. Let's assume CASCADE or delete conversations first.
-        // Actually, deleting conversations is mostly safe.
+  const confirmDeleteData = async () => {
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-        const { error: convError } = await supabase
-          .from('conversaciones')
+      // 1. Get all conversations first to filter related data if needed, 
+      // but simpler is to delete by conversation_id join if possible. 
+      // Since supabase client typical delete is single table, we iterate or delete filtered.
+      // But we can delete messages where conversation_id in (select id from conversaciones where user_id = user.id)
+      // Actually, standard RLS might prevent deleting others' data, so:
+
+      // Step A: Delete all messages for this user's conversations
+      // We first find the user's conversation IDs
+      const { data: conversations } = await supabase
+        .from('conversaciones')
+        .select('id')
+        .eq('usuario_id', user.id);
+
+      if (conversations && conversations.length > 0) {
+        const conversationIds = conversations.map(c => c.id);
+
+
+
+        // Delete messages
+        await supabase
+          .from('mensajes')
           .delete()
-          .eq('usuario_id', user.id);
-
-        if (convError) throw convError;
-
-        toast({
-          title: "Datos eliminados",
-          description: "Todo tu historial de conversaciones ha sido borrado.",
-        });
-
-        // Refresh page to clear state
-        window.location.reload();
-
-      } catch (error) {
-        console.error('Error deleting data:', error);
-        toast({
-          title: "Error",
-          description: "Hubo un problema al eliminar los datos.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-        onClose();
+          .in('conversacion_id', conversationIds);
       }
+
+      // Step B: Delete conversations
+      const { error: convError } = await supabase
+        .from('conversaciones')
+        .delete()
+        .eq('usuario_id', user.id);
+
+      if (convError) throw convError;
+
+      toast({
+        title: "Datos eliminados",
+        description: "Todo tu historial de conversaciones ha sido borrado.",
+      });
+
+      // Refresh page to clear state
+      window.location.reload();
+
+    } catch (error: any) {
+      console.error('Error deleting data:', error);
+      toast({
+        title: "Error al eliminar",
+        description: error.message || "No se pudo eliminar los datos. Verifica los permisos (RLS) en Supabase.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+      setShowDeleteDialog(false);
+      onClose();
     }
   };
 
@@ -281,6 +322,23 @@ export const SettingsModal = ({
           )}
         </div>
       </div>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Eliminará permanentemente todas tus conversaciones y mensajes asociados a tu cuenta.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteData} className="bg-red-600 hover:bg-red-700">
+              {loading ? "Eliminando..." : "Eliminar todo"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

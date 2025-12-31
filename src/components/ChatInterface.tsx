@@ -31,6 +31,7 @@ interface UserContext {
   isAnonymous: boolean;
   userId: string;
   isGuest?: boolean;
+  avatarUrl?: string;
 }
 
 interface ChatInterfaceProps {
@@ -61,6 +62,22 @@ export const ChatInterface = ({
   const [showSettings, setShowSettings] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('perfiles')
+        .select('avatar_url')
+        .eq('id', userId)
+        .single();
+
+      if (data) {
+        setUserContext(prev => prev ? { ...prev, avatarUrl: data.avatar_url || '' } : null);
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -103,6 +120,7 @@ export const ChatInterface = ({
           isAnonymous: false,
           userId: user.id
         });
+        fetchUserProfile(user.id); // Fetch avatar
         setShowOnboarding(false);
       } else {
         setShowOnboarding(true);
@@ -502,6 +520,7 @@ export const ChatInterface = ({
         isGuestMode={isGuestMode}
         onExitGuestMode={onExitGuestMode}
         isAdmin={isAdmin}
+        avatarUrl={userContext?.avatarUrl}
       />
       {/* Chat Area */}
       <div className="flex-1 flex flex-col bg-gray-50 dark:bg-gray-900 relative">
@@ -587,6 +606,7 @@ export const ChatInterface = ({
         userName={userContext?.name}
         isGuestMode={isGuestMode}
         onExitGuestMode={onExitGuestMode}
+        onProfileUpdated={() => user && fetchUserProfile(user.id)}
       />
     </div>
   );
